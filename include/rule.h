@@ -769,6 +769,7 @@ struct eval_ctx {
 	struct rule		*rule;
 	struct set		*set;
 	struct stmt		*stmt;
+	uint32_t		stmt_len;
 	struct expr_ctx		ectx;
 	struct proto_ctx	pctx;
 };
