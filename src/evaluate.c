@@ -1213,6 +1213,7 @@ static int expr_evaluate_shift(struct eval_ctx *ctx, struct expr **expr)
 	if (byteorder_conversion(ctx, &op->right, BYTEORDER_HOST_ENDIAN) < 0)
 		return -1;
 
+	datatype_set(op, &integer_type);
 	op->byteorder = BYTEORDER_HOST_ENDIAN;
 	op->len	      = max_shift_len;
 
