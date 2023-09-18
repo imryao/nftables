@@ -1769,6 +1769,13 @@ static int mapping_expr_expand(struct eval_ctx *ctx)
 	return 0;
 }
 
+static bool datatype_compatible(const struct datatype *a, const struct datatype *b)
+{
+	return (a->type == TYPE_MARK &&
+		datatype_equal(datatype_basetype(a), datatype_basetype(b))) ||
+		datatype_equal(a, b);
+}
+
 static int expr_evaluate_map(struct eval_ctx *ctx, struct expr **expr)
 {
 	struct expr *map = *expr, *mappings;
@@ -1880,7 +1887,7 @@ static int expr_evaluate_map(struct eval_ctx *ctx, struct expr **expr)
 					 "invalid mapping expression %s", expr_name(map->mappings));
 	}
 
-	if (!datatype_equal(map->map->dtype, map->mappings->set->key->dtype))
+	if (!datatype_compatible(map->mappings->set->key->dtype, map->map->dtype))
 		return expr_binary_error(ctx->msgs, map->mappings, map->map,
 					 "datatype mismatch, map expects %s, "
 					 "mapping expression has type %s",
@@ -2732,11 +2739,7 @@ static int __stmt_evaluate_arg(struct eval_ctx *ctx, struct stmt *stmt,
 					 dtype->desc, (*expr)->dtype->desc,
 					 (*expr)->len);
 
-	if ((dtype->type == TYPE_MARK &&
-	     !datatype_equal(datatype_basetype(dtype), datatype_basetype((*expr)->dtype))) ||
-	    (dtype->type != TYPE_MARK &&
-	     (*expr)->dtype->type != TYPE_INTEGER &&
-	     !datatype_equal((*expr)->dtype, dtype)))
+	if (!datatype_compatible(dtype, (*expr)->dtype))
 		return stmt_binary_error(ctx, *expr, stmt,		/* verdict vs invalid? */
 					 "datatype mismatch: expected %s, "
 					 "expression has type %s",
@@ -4256,7 +4259,7 @@ static int stmt_evaluate_objref_map(struct eval_ctx *ctx, struct stmt *stmt)
 		    expr_name(map->mappings));
 	}
 
-	if (!datatype_equal(map->map->dtype, map->mappings->set->key->dtype))
+	if (!datatype_compatible(map->mappings->set->key->dtype, map->map->dtype))
 		return expr_binary_error(ctx->msgs, map->mappings, map->map,
 					 "datatype mismatch, map expects %s, "
 					 "mapping expression has type %s",
