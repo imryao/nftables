@@ -1473,6 +1473,10 @@ static int expr_evaluate_concat(struct eval_ctx *ctx, struct expr **expr)
 
 			key = list_next_entry(key, list);
 		}
+
+		if (size > NFT_MAX_EXPR_LEN_BITS)
+			return expr_error(ctx->msgs, i, "Concatenation of size %u exceeds maximum size of %u",
+					  size, NFT_MAX_EXPR_LEN_BITS);
 	}
 
 	(*expr)->flags |= flags;
@@ -4527,6 +4531,10 @@ static int set_expr_evaluate_concat(struct eval_ctx *ctx, struct expr **expr)
 
 		(*expr)->field_len[(*expr)->field_count++] = dsize_bytes;
 		size += netlink_padded_len(i->len);
+
+		if (size > NFT_MAX_EXPR_LEN_BITS)
+			return expr_error(ctx->msgs, i, "Concatenation of size %u exceeds maximum size of %u",
+					  size, NFT_MAX_EXPR_LEN_BITS);
 	}
 
 	(*expr)->flags |= flags;
