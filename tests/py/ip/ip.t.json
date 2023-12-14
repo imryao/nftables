@@ -1746,3 +1746,24 @@
         }
     }
 ]
+
+# ip dscp 1/6
+[
+    {
+        "match": {
+            "left": {
+                "&": [
+                    {
+                        "payload": {
+                            "field": "dscp",
+                            "protocol": "ip"
+                        }
+                    },
+                    63
+                ]
+            },
+            "op": "==",
+            "right": "lephb"
+        }
+    }
+]
