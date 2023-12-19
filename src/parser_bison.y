@@ -1993,11 +1993,20 @@ set_block		:	/* empty */	{ $$ = $<set>-1; }
 			|	set_block	stmt_separator
 			|	set_block	TYPE		data_type_expr	stmt_separator	close_scope_type
 			{
+				if (already_set($1->key, &@2, state)) {
+					expr_free($3);
+					YYERROR;
+				}
+
 				$1->key = $3;
 				$$ = $1;
 			}
 			|	set_block	TYPEOF		typeof_expr	stmt_separator
 			{
+				if (already_set($1->key, &@2, state)) {
+					expr_free($3);
+					YYERROR;
+				}
 				$1->key = $3;
 				datatype_set($1->key, $3->dtype);
 				$$ = $1;
@@ -2025,6 +2034,10 @@ set_block		:	/* empty */	{ $$ = $<set>-1; }
 			}
 			|	set_block	ELEMENTS	'='		set_block_expr
 			{
+				if (already_set($1->init, &@2, state)) {
+					expr_free($4);
+					YYERROR;
+				}
 				$1->init = $4;
 				$$ = $1;
 			}
@@ -2102,6 +2115,12 @@ map_block		:	/* empty */	{ $$ = $<set>-1; }
 						data_type_expr	COLON	INTERVAL	data_type_expr
 						stmt_separator	close_scope_type
 			{
+				if (already_set($1->key, &@2, state)) {
+					expr_free($3);
+					expr_free($6);
+					YYERROR;
+				}
+
 				$1->key = $3;
 				$1->data = $6;
 				$1->data->flags |= EXPR_F_INTERVAL;
@@ -2113,8 +2132,13 @@ map_block		:	/* empty */	{ $$ = $<set>-1; }
 						typeof_expr	COLON	typeof_data_expr
 						stmt_separator
 			{
+				if (already_set($1->key, &@2, state)) {
+					expr_free($3);
+					expr_free($5);
+					YYERROR;
+				}
+
 				$1->key = $3;
-				datatype_set($1->key, $3->dtype);
 				$1->data = $5;
 
 				$1->flags |= NFT_SET_MAP;
@@ -2124,8 +2148,13 @@ map_block		:	/* empty */	{ $$ = $<set>-1; }
 						typeof_expr	COLON	INTERVAL	typeof_expr
 						stmt_separator
 			{
+				if (already_set($1->key, &@2, state)) {
+					expr_free($3);
+					expr_free($6);
+					YYERROR;
+				}
+
 				$1->key = $3;
-				datatype_set($1->key, $3->dtype);
 				$1->data = $6;
 				$1->data->flags |= EXPR_F_INTERVAL;
 
@@ -2136,6 +2165,11 @@ map_block		:	/* empty */	{ $$ = $<set>-1; }
 						data_type_expr	COLON	map_block_obj_type
 						stmt_separator	close_scope_type
 			{
+				if (already_set($1->key, &@2, state)) {
+					expr_free($3);
+					YYERROR;
+				}
+
 				$1->key = $3;
 				$1->objtype = $5;
 				$1->flags  |= NFT_SET_OBJECT;
