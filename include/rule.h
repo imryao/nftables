@@ -758,10 +758,13 @@ void cmd_add_loc(struct cmd *cmd, uint16_t offset, const struct location *loc);
  * @rule:	current rule
  * @set:	current set
  * @stmt:	current statement
+ * @stmt_len:	current statement template length
+ * @recursion:  expr evaluation recursion counter
  * @cache:	cache context
  * @debug_mask: debugging bitmask
  * @ectx:	expression context
- * @pctx:	payload context
+ * @_pctx:	payload contexts
+ * @inner_desc: inner header description
  */
 struct eval_ctx {
 	struct nft_ctx		*nft;
@@ -772,6 +775,7 @@ struct eval_ctx {
 	struct set		*set;
 	struct stmt		*stmt;
 	uint32_t		stmt_len;
+	uint32_t		recursion;
 	struct expr_ctx		ectx;
 	struct proto_ctx	pctx;
 };
