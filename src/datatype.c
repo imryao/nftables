@@ -618,7 +618,8 @@ static void inet_protocol_type_print(const struct expr *expr,
 {
 	struct protoent *p;
 
-	if (!nft_output_numeric_proto(octx)) {
+	if (!nft_output_numeric_proto(octx) &&
+	    mpz_cmp_ui(expr->value, UINT8_MAX) <= 0) {
 		p = getprotobynumber(mpz_get_uint8(expr->value));
 		if (p != NULL) {
 			nft_print(octx, "%s", p->p_name);
@@ -697,7 +698,8 @@ static void inet_service_print(const struct expr *expr, struct output_ctx *octx)
 
 void inet_service_type_print(const struct expr *expr, struct output_ctx *octx)
 {
-	if (nft_output_service(octx)) {
+	if (nft_output_service(octx) &&
+	    mpz_cmp_ui(expr->value, UINT16_MAX) <= 0) {
 		inet_service_print(expr, octx);
 		return;
 	}
