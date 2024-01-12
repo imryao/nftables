@@ -2266,12 +2266,15 @@ static void flowtable_print_declaration(const struct flowtable *flowtable,
 	if (nft_output_handle(octx))
 		nft_print(octx, " # handle %" PRIu64, flowtable->handle.handle.id);
 	nft_print(octx, "%s", opts->nl);
-	nft_print(octx, "%s%shook %s priority %s%s",
-		  opts->tab, opts->tab,
-		  hooknum2str(NFPROTO_NETDEV, flowtable->hook.num),
-		  prio2str(octx, priobuf, sizeof(priobuf), NFPROTO_NETDEV,
-			   flowtable->hook.num, flowtable->priority.expr),
-		  opts->stmt_separator);
+
+	if (flowtable->priority.expr) {
+		nft_print(octx, "%s%shook %s priority %s%s",
+			  opts->tab, opts->tab,
+			  hooknum2str(NFPROTO_NETDEV, flowtable->hook.num),
+			  prio2str(octx, priobuf, sizeof(priobuf), NFPROTO_NETDEV,
+				   flowtable->hook.num, flowtable->priority.expr),
+			  opts->stmt_separator);
+	}
 
 	if (flowtable->dev_array_len > 0) {
 		nft_print(octx, "%s%sdevices = { ", opts->tab, opts->tab);
