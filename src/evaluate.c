@@ -472,9 +472,9 @@ static int expr_evaluate_primary(struct eval_ctx *ctx, struct expr **expr)
 }
 
 static int
-conflict_resolution_gen_dependency(struct eval_ctx *ctx, int protocol,
-				   const struct expr *expr,
-				   struct stmt **res)
+ll_conflict_resolution_gen_dependency(struct eval_ctx *ctx, int protocol,
+				      const struct expr *expr,
+				      struct stmt **res)
 {
 	enum proto_bases base = expr->payload.base;
 	const struct proto_hdr_template *tmpl;
@@ -727,49 +727,43 @@ static bool proto_is_dummy(const struct proto_desc *desc)
 	return desc == &proto_inet || desc == &proto_netdev;
 }
 
-static int resolve_protocol_conflict(struct eval_ctx *ctx,
-				     const struct proto_desc *desc,
-				     struct expr *payload)
+static int resolve_ll_protocol_conflict(struct eval_ctx *ctx,
+				        const struct proto_desc *desc,
+					struct expr *payload)
 {
 	enum proto_bases base = payload->payload.base;
 	struct stmt *nstmt = NULL;
+	unsigned int i;
 	int link, err;
 
-	if (payload->payload.base == PROTO_BASE_LL_HDR) {
-		if (proto_is_dummy(desc)) {
-			err = meta_iiftype_gen_dependency(ctx, payload, &nstmt);
-			if (err < 0)
-				return err;
+	assert(base == PROTO_BASE_LL_HDR);
 
-			desc = payload->payload.desc;
-			rule_stmt_insert_at(ctx->rule, nstmt, ctx->stmt);
-		} else {
-			unsigned int i;
+	if (proto_is_dummy(desc)) {
+		err = meta_iiftype_gen_dependency(ctx, payload, &nstmt);
+		if (err < 0)
+			return err;
 
-			/* payload desc stored in the L2 header stack? No conflict. */
-			for (i = 0; i < ctx->pctx.stacked_ll_count; i++) {
-				if (ctx->pctx.stacked_ll[i] == payload->payload.desc)
-					return 0;
-			}
+		desc = payload->payload.desc;
+		rule_stmt_insert_at(ctx->rule, nstmt, ctx->stmt);
+	} else {
+		/* payload desc stored in the L2 header stack? No conflict. */
+		for (i = 0; i < ctx->pctx.stacked_ll_count; i++) {
+			if (ctx->pctx.stacked_ll[i] == payload->payload.desc)
+				return 0;
 		}
 	}
 
-	assert(base <= PROTO_BASE_MAX);
 	/* This payload and the existing context don't match, conflict. */
 	if (ctx->pctx.protocol[base + 1].desc != NULL)
 		return 1;
 
 	link = proto_find_num(desc, payload->payload.desc);
 	if (link < 0 ||
-	    conflict_resolution_gen_dependency(ctx, link, payload, &nstmt) < 0)
+	    ll_conflict_resolution_gen_dependency(ctx, link, payload, &nstmt) < 0)
 		return 1;
 
-	if (base == PROTO_BASE_LL_HDR) {
-		unsigned int i;
-
-		for (i = 0; i < ctx->pctx.stacked_ll_count; i++)
-			payload->payload.offset += ctx->pctx.stacked_ll[i]->length;
-	}
+	for (i = 0; i < ctx->pctx.stacked_ll_count; i++)
+		payload->payload.offset += ctx->pctx.stacked_ll[i]->length;
 
 	rule_stmt_insert_at(ctx->rule, nstmt, ctx->stmt);
 
@@ -808,7 +802,7 @@ static int __expr_evaluate_payload(struct eval_ctx *ctx, struct expr *expr)
 
 			link = proto_find_num(desc, payload->payload.desc);
 			if (link < 0 ||
-			    conflict_resolution_gen_dependency(ctx, link, payload, &nstmt) < 0)
+			    ll_conflict_resolution_gen_dependency(ctx, link, payload, &nstmt) < 0)
 				return expr_error(ctx->msgs, payload,
 						  "conflicting protocols specified: %s vs. %s",
 						  desc->name,
@@ -863,8 +857,8 @@ check_icmp:
 	/* If we already have context and this payload is on the same
 	 * base, try to resolve the protocol conflict.
 	 */
-	if (payload->payload.base == desc->base) {
-		err = resolve_protocol_conflict(ctx, desc, payload);
+	if (base == PROTO_BASE_LL_HDR) {
+		err = resolve_ll_protocol_conflict(ctx, desc, payload);
 		if (err <= 0)
 			return err;
 
@@ -873,7 +867,8 @@ check_icmp:
 			return 0;
 	}
 	return expr_error(ctx->msgs, payload,
-			  "conflicting protocols specified: %s vs. %s",
+			  "conflicting %s protocols specified: %s vs. %s",
+			  proto_base_names[base],
 			  ctx->pctx.protocol[base].desc->name,
 			  payload->payload.desc->name);
 }
