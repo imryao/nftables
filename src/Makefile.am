@@ -84,7 +84,6 @@ libparser_la_SOURCES = parser_bison.y scanner.l
 libparser_la_CFLAGS = ${AM_CFLAGS} \
 		      -Wno-missing-prototypes \
 		      -Wno-missing-declarations \
-		      -Wno-implicit-function-declaration \
 		      -Wno-nested-externs \
 		      -Wno-undef \
 		      -Wno-redundant-decls
