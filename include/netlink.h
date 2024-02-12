@@ -54,6 +54,7 @@ struct rule_pp_ctx {
 	struct payload_dep_ctx	pdctx;
 	struct stmt		*stmt;
 	unsigned int		flags;
+	struct set		*set;
 };
 
 extern const struct input_descriptor indesc_netlink;
