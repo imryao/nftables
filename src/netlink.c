@@ -1044,6 +1044,8 @@ struct set *netlink_delinearize_set(struct netlink_ctx *ctx,
 	}
 	list_splice_tail(&set_parse_ctx.stmt_list, &set->stmt_list);
 
+	set->flags = nftnl_set_get_u32(nls, NFTNL_SET_FLAGS);
+
 	if (datatype) {
 		uint32_t dlen;
 
@@ -1055,6 +1057,12 @@ struct set *netlink_delinearize_set(struct netlink_ctx *ctx,
 		if (set_udata_key_valid(typeof_expr_data, dlen)) {
 			typeof_expr_data->len = klen;
 			set->data = typeof_expr_data;
+			typeof_expr_data = NULL;
+		} else if (set->flags & NFT_SET_OBJECT) {
+			set->data = constant_expr_alloc(&netlink_location,
+							dtype2,
+							databyteorder, klen,
+							NULL);
 		} else {
 			expr_free(typeof_expr_data);
 			set->data = constant_expr_alloc(&netlink_location,
@@ -1084,7 +1092,6 @@ struct set *netlink_delinearize_set(struct netlink_ctx *ctx,
 					       NULL);
 	}
 
-	set->flags   = nftnl_set_get_u32(nls, NFTNL_SET_FLAGS);
 	set->handle.handle.id = nftnl_set_get_u64(nls, NFTNL_SET_HANDLE);
 
 	set->objtype = objtype;
