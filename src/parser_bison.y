@@ -717,7 +717,7 @@ int nft_lex(void *, void *, void *);
 
 %type <set>			map_block_alloc map_block
 %destructor { set_free($$); }	map_block_alloc
-%type <val>			map_block_obj_type map_block_data_interval
+%type <val>			map_block_obj_type map_block_obj_typeof map_block_data_interval
 
 %type <flowtable>		flowtable_block_alloc flowtable_block
 %destructor { flowtable_free($$); }	flowtable_block_alloc
@@ -947,7 +947,7 @@ int nft_lex(void *, void *, void *);
 %destructor { expr_free($$); }	exthdr_exists_expr
 %type <val>			exthdr_key
 
-%type <val>			ct_l4protoname ct_obj_type ct_cmd_type
+%type <val>			ct_l4protoname ct_obj_type ct_cmd_type ct_obj_type_map
 
 %type <list>			timeout_states timeout_state
 %destructor { xfree($$); }	timeout_states timeout_state
@@ -2088,11 +2088,19 @@ map_block_alloc		:	/* empty */
 			}
 			;
 
+ct_obj_type_map		: 	TIMEOUT		{ $$ = NFT_OBJECT_CT_TIMEOUT; }
+			|	EXPECTATION	{ $$ = NFT_OBJECT_CT_EXPECT; }
+			;
+
 map_block_obj_type	:	COUNTER	close_scope_counter { $$ = NFT_OBJECT_COUNTER; }
 			|	QUOTA	close_scope_quota { $$ = NFT_OBJECT_QUOTA; }
 			|	LIMIT	close_scope_limit { $$ = NFT_OBJECT_LIMIT; }
 			|	SECMARK close_scope_secmark { $$ = NFT_OBJECT_SECMARK; }
 			|	SYNPROXY close_scope_synproxy { $$ = NFT_OBJECT_SYNPROXY; }
+			;
+
+map_block_obj_typeof	:	map_block_obj_type
+			|	CT	ct_obj_type_map	close_scope_ct	{ $$ = $2; }
 			;
 
 map_block_data_interval :	INTERVAL { $$ = EXPR_F_INTERVAL; }
@@ -2160,7 +2168,7 @@ map_block		:	/* empty */	{ $$ = $<set>-1; }
 				$$ = $1;
 			}
 			|	map_block	TYPEOF
-						typeof_expr 	COLON	map_block_obj_type
+						typeof_expr 	COLON	map_block_obj_typeof
 						stmt_separator
 			{
 				$1->key = $3;
