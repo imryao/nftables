@@ -1507,11 +1507,11 @@ static void netlink_gen_map_stmt(struct netlink_linearize_ctx *ctx,
 	sreg_key = get_register(ctx, stmt->map.key->key);
 	netlink_gen_expr(ctx, stmt->map.key->key, sreg_key);
 
-	sreg_data = get_register(ctx, stmt->map.data);
-	netlink_gen_expr(ctx, stmt->map.data, sreg_data);
+	sreg_data = get_register(ctx, stmt->map.data->key);
+	netlink_gen_expr(ctx, stmt->map.data->key, sreg_data);
 
 	release_register(ctx, stmt->map.key->key);
-	release_register(ctx, stmt->map.data);
+	release_register(ctx, stmt->map.data->key);
 
 	nle = alloc_nft_expr("dynset");
 	netlink_put_register(nle, NFTNL_EXPR_DYNSET_SREG_KEY, sreg_key);
