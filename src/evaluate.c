@@ -1008,7 +1008,7 @@ static int ct_gen_nh_dependency(struct eval_ctx *ctx, struct expr *ct)
 		base = ctx->pctx.protocol[PROTO_BASE_NETWORK_HDR].desc;
 		if (base == &proto_ip)
 			ct->ct.nfproto = NFPROTO_IPV4;
-		else if (base == &proto_ip)
+		else if (base == &proto_ip6)
 			ct->ct.nfproto = NFPROTO_IPV6;
 
 		if (base)
