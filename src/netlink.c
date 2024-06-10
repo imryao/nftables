@@ -2046,6 +2046,7 @@ restart:
 		/* Skip unknown and filtered expressions */
 		desc = lhs->payload.desc;
 		if (lhs->dtype == &invalid_type ||
+		    lhs->payload.tmpl == &proto_unknown_template ||
 		    desc->checksum_key == payload_hdr_field(lhs) ||
 		    desc->format.filter & (1 << payload_hdr_field(lhs))) {
 			expr_free(lhs);
