@@ -236,7 +236,8 @@ static void nft_cmd_enoent(struct netlink_ctx *ctx, const struct cmd *cmd,
 static int nft_cmd_chain_error(struct netlink_ctx *ctx, struct cmd *cmd,
 			       struct mnl_err *err)
 {
-	struct chain *chain = cmd->chain;
+	struct chain *chain = cmd->chain, *existing_chain;
+	const struct table *table;
 	int priority;
 
 	switch (err->err) {
@@ -249,6 +250,18 @@ static int nft_cmd_chain_error(struct netlink_ctx *ctx, struct cmd *cmd,
 		if (priority <= -200 && !strcmp(chain->type.str, "nat"))
 			return netlink_io_error(ctx, &chain->priority.loc,
 						"Chains of type \"nat\" must have a priority value above -200");
+
+		table = table_cache_find(&ctx->nft->cache.table_cache,
+					 cmd->handle.table.name, cmd->handle.family);
+		if (table) {
+			existing_chain = chain_cache_find(table, cmd->handle.chain.name);
+			if (existing_chain && existing_chain != chain &&
+			    !strcmp(existing_chain->handle.chain.name, chain->handle.chain.name))
+				return netlink_io_error(ctx, &chain->loc,
+							"Chain \"%s\" already exists in table %s '%s' with different declaration",
+							chain->handle.chain.name,
+							family2str(table->handle.family), table->handle.table.name);
+		}
 
 		return netlink_io_error(ctx, &chain->loc,
 					"Chain of type \"%s\" is not supported, perhaps kernel support is missing?",
