@@ -4112,10 +4112,11 @@ map_stmt		:	set_stmt_op	set_ref_expr '{' set_elem_expr_stmt	COLON	set_elem_expr_
 			}
 			;
 
-meter_stmt		:	flow_stmt_legacy_alloc		flow_stmt_opts	'{' meter_key_expr stmt '}'
+meter_stmt		:	flow_stmt_legacy_alloc		TABLE identifier	'{' meter_key_expr stmt '}'
 			{
-				$1->meter.key  = $4;
-				$1->meter.stmt = $5;
+				$1->meter.name = $3;
+				$1->meter.key  = $5;
+				$1->meter.stmt = $6;
 				$$->location  = @$;
 				$$ = $1;
 			}
@@ -4125,19 +4126,6 @@ meter_stmt		:	flow_stmt_legacy_alloc		flow_stmt_opts	'{' meter_key_expr stmt '}'
 flow_stmt_legacy_alloc	:	FLOW
 			{
 				$$ = meter_stmt_alloc(&@$);
-			}
-			;
-
-flow_stmt_opts		:	flow_stmt_opt
-			{
-				$<stmt>$	= $<stmt>0;
-			}
-			|	flow_stmt_opts		flow_stmt_opt
-			;
-
-flow_stmt_opt		:	TABLE			identifier
-			{
-				$<stmt>0->meter.name = $2;
 			}
 			;
 
