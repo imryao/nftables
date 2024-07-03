@@ -379,7 +379,7 @@ static int setelem_delete(struct list_head *msgs, struct set *set,
 			  struct expr *purge, struct expr *elems,
 			  unsigned int debug_mask)
 {
-	struct expr *i, *next, *prev = NULL;
+	struct expr *i, *next, *elem, *prev = NULL;
 	struct range range, prev_range;
 	int err = 0;
 	mpz_t rop;
@@ -390,21 +390,26 @@ static int setelem_delete(struct list_head *msgs, struct set *set,
 	mpz_init(range.high);
 	mpz_init(rop);
 
-	list_for_each_entry_safe(i, next, &elems->expressions, list) {
-		if (i->key->etype == EXPR_SET_ELEM_CATCHALL)
-			continue;
+	list_for_each_entry_safe(elem, next, &elems->expressions, list) {
+		i = interval_expr_key(elem);
 
-		range_expr_value_low(range.low, i);
-		range_expr_value_high(range.high, i);
+		if (i->key->etype == EXPR_SET_ELEM_CATCHALL) {
+			/* Assume max value to simplify handling. */
+			mpz_bitmask(range.low, i->len);
+			mpz_bitmask(range.high, i->len);
+		} else {
+			range_expr_value_low(range.low, i);
+			range_expr_value_high(range.high, i);
+		}
 
-		if (!prev && i->flags & EXPR_F_REMOVE) {
+		if (!prev && elem->flags & EXPR_F_REMOVE) {
 			expr_error(msgs, i, "element does not exist");
 			err = -1;
 			goto err;
 		}
 
-		if (!(i->flags & EXPR_F_REMOVE)) {
-			prev = i;
+		if (!(elem->flags & EXPR_F_REMOVE)) {
+			prev = elem;
 			mpz_set(prev_range.low, range.low);
 			mpz_set(prev_range.high, range.high);
 			continue;
@@ -412,12 +417,12 @@ static int setelem_delete(struct list_head *msgs, struct set *set,
 
 		if (mpz_cmp(prev_range.low, range.low) == 0 &&
 		    mpz_cmp(prev_range.high, range.high) == 0) {
-			if (i->flags & EXPR_F_REMOVE) {
+			if (elem->flags & EXPR_F_REMOVE) {
 				if (prev->flags & EXPR_F_KERNEL)
 					list_move_tail(&prev->list, &purge->expressions);
 
-				list_del(&i->list);
-				expr_free(i);
+				list_del(&elem->list);
+				expr_free(elem);
 			}
 		} else if (set->automerge) {
 			if (setelem_adjust(set, purge, &prev_range, &range, prev, i) < 0) {
@@ -425,7 +430,7 @@ static int setelem_delete(struct list_head *msgs, struct set *set,
 				err = -1;
 				goto err;
 			}
-		} else if (i->flags & EXPR_F_REMOVE) {
+		} else if (elem->flags & EXPR_F_REMOVE) {
 			expr_error(msgs, i, "element does not exist");
 			err = -1;
 			goto err;
