@@ -1720,6 +1720,16 @@ err_missing_flag:
 			  set_is_map(ctx->set->flags) ? "map" : "set", expr_name(key));
 }
 
+static int expr_evaluate_set_elem_catchall(struct eval_ctx *ctx, struct expr **expr)
+{
+	struct expr *elem = *expr;
+
+	if (ctx->set)
+		elem->len = ctx->set->key->len;
+
+	return 0;
+}
+
 static const struct expr *expr_set_elem(const struct expr *expr)
 {
 	if (expr->etype == EXPR_MAPPING)
@@ -2831,7 +2841,7 @@ static int expr_evaluate(struct eval_ctx *ctx, struct expr **expr)
 	case EXPR_XFRM:
 		return expr_evaluate_xfrm(ctx, expr);
 	case EXPR_SET_ELEM_CATCHALL:
-		return 0;
+		return expr_evaluate_set_elem_catchall(ctx, expr);
 	case EXPR_FLAGCMP:
 		return expr_evaluate_flagcmp(ctx, expr);
 	default:
