@@ -691,29 +691,36 @@ static void build_verdict_map(struct expr *expr, struct stmt *verdict,
 			      struct expr *set, struct stmt *counter)
 {
 	struct expr *item, *elem, *mapping;
+	struct stmt *counter_elem;
 
 	switch (expr->etype) {
 	case EXPR_LIST:
 		list_for_each_entry(item, &expr->expressions, list) {
 			elem = set_elem_expr_alloc(&internal_location, expr_get(item));
-			if (counter)
-				list_add_tail(&counter->list, &elem->stmt_list);
+			if (counter) {
+				counter_elem = counter_stmt_alloc(&counter->location);
+				list_add_tail(&counter_elem->list, &elem->stmt_list);
+			}
 
 			mapping = mapping_expr_alloc(&internal_location, elem,
 						     expr_get(verdict->expr));
 			compound_expr_add(set, mapping);
 		}
+		stmt_free(counter);
 		break;
 	case EXPR_SET:
 		list_for_each_entry(item, &expr->expressions, list) {
 			elem = set_elem_expr_alloc(&internal_location, expr_get(item->key));
-			if (counter)
-				list_add_tail(&counter->list, &elem->stmt_list);
+			if (counter) {
+				counter_elem = counter_stmt_alloc(&counter->location);
+				list_add_tail(&counter_elem->list, &elem->stmt_list);
+			}
 
 			mapping = mapping_expr_alloc(&internal_location, elem,
 						     expr_get(verdict->expr));
 			compound_expr_add(set, mapping);
 		}
+		stmt_free(counter);
 		break;
 	case EXPR_PREFIX:
 	case EXPR_RANGE:
@@ -818,8 +825,8 @@ static void __merge_concat_stmts_vmap(const struct optimize_ctx *ctx,
 				      struct expr *set, struct stmt *verdict)
 {
 	struct expr *concat, *next, *elem, *mapping;
+	struct stmt *counter, *counter_elem;
 	LIST_HEAD(concat_list);
-	struct stmt *counter;
 
 	counter = zap_counter(ctx, i);
 	__merge_concat(ctx, i, merge, &concat_list);
@@ -827,13 +834,16 @@ static void __merge_concat_stmts_vmap(const struct optimize_ctx *ctx,
 	list_for_each_entry_safe(concat, next, &concat_list, list) {
 		list_del(&concat->list);
 		elem = set_elem_expr_alloc(&internal_location, concat);
-		if (counter)
-			list_add_tail(&counter->list, &elem->stmt_list);
+		if (counter) {
+			counter_elem = counter_stmt_alloc(&counter->location);
+			list_add_tail(&counter_elem->list, &elem->stmt_list);
+		}
 
 		mapping = mapping_expr_alloc(&internal_location, elem,
 					     expr_get(verdict->expr));
 		compound_expr_add(set, mapping);
 	}
+	stmt_free(counter);
 }
 
 static void merge_concat_stmts_vmap(const struct optimize_ctx *ctx,
