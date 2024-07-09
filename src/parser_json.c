@@ -4180,6 +4180,13 @@ int nft_parse_json_filename(struct nft_ctx *nft, const char *filename,
 	json_error_t err;
 	int ret;
 
+	if (nft->stdin_buf) {
+		json_indesc.type = INDESC_STDIN;
+		json_indesc.name = "/dev/stdin";
+
+		return nft_parse_json_buffer(nft, nft->stdin_buf, msgs, cmds);
+	}
+
 	json_indesc.type = INDESC_FILE;
 	json_indesc.name = filename;
 

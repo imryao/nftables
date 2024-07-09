@@ -784,8 +784,7 @@ int nft_run_cmd_from_filename(struct nft_ctx *nft, const char *filename)
 	if (!strcmp(filename, "-"))
 		filename = "/dev/stdin";
 
-	if (!strcmp(filename, "/dev/stdin") &&
-	    !nft_output_json(&nft->output))
+	if (!strcmp(filename, "/dev/stdin"))
 		nft->stdin_buf = stdin_to_buffer();
 
 	if (nft->optimize_flags) {
