@@ -654,12 +654,16 @@ retry:
 
 /* need to use stat() to, fopen() will block for named fifos and
  * libjansson makes no checks before or after open either.
+ * /dev/stdin is *never* used, read() from STDIN_FILENO is used instead.
  */
 static struct error_record *filename_is_useable(struct nft_ctx *nft, const char *name)
 {
 	unsigned int type;
 	struct stat sb;
 	int err;
+
+	if (!strcmp(name, "/dev/stdin"))
+		return NULL;
 
 	err = stat(name, &sb);
 	if (err)
@@ -669,9 +673,6 @@ static struct error_record *filename_is_useable(struct nft_ctx *nft, const char 
 	type = sb.st_mode & S_IFMT;
 
 	if (type == S_IFREG || type == S_IFIFO)
-		return NULL;
-
-	if (type == S_IFCHR && 0 == strcmp(name, "/dev/stdin"))
 		return NULL;
 
 	return error(&internal_location, "Not a regular file: \"%s\"\n", name);
