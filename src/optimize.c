@@ -407,9 +407,11 @@ static int rule_collect_stmts(struct optimize_ctx *ctx, struct rule *rule)
 			break;
 		case STMT_NAT:
 			if ((stmt->nat.addr &&
-			     stmt->nat.addr->etype == EXPR_MAP) ||
+			     (stmt->nat.addr->etype == EXPR_MAP ||
+			      stmt->nat.addr->etype == EXPR_VARIABLE)) ||
 			    (stmt->nat.proto &&
-			     stmt->nat.proto->etype == EXPR_MAP)) {
+			     (stmt->nat.proto->etype == EXPR_MAP ||
+			      stmt->nat.proto->etype == EXPR_VARIABLE))) {
 				clone->ops = &unsupported_stmt_ops;
 				break;
 			}
