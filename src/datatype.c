@@ -1313,14 +1313,14 @@ static struct error_record *time_unit_parse(const struct location *loc,
 struct error_record *data_unit_parse(const struct location *loc,
 				     const char *str, uint64_t *rate)
 {
-	if (strncmp(str, "bytes", strlen("bytes")) == 0)
+	if (strcmp(str, "bytes") == 0)
 		*rate = 1ULL;
-	else if (strncmp(str, "kbytes", strlen("kbytes")) == 0)
+	else if (strcmp(str, "kbytes") == 0)
 		*rate = 1024;
-	else if (strncmp(str, "mbytes", strlen("mbytes")) == 0)
+	else if (strcmp(str, "mbytes") == 0)
 		*rate = 1024 * 1024;
 	else
-		return error(loc, "Wrong rate format");
+		return error(loc, "Wrong unit format, expecting bytes, kbytes or mbytes");
 
 	return NULL;
 }
@@ -1328,14 +1328,20 @@ struct error_record *data_unit_parse(const struct location *loc,
 struct error_record *rate_parse(const struct location *loc, const char *str,
 				uint64_t *rate, uint64_t *unit)
 {
+	const char *slash, *rate_str;
 	struct error_record *erec;
-	const char *slash;
 
 	slash = strchr(str, '/');
 	if (!slash)
-		return error(loc, "wrong rate format");
+		return error(loc, "wrong rate format, expecting {bytes,kbytes,mbytes}/{second,minute,hour,day,week}");
 
-	erec = data_unit_parse(loc, str, rate);
+	rate_str = strndup(str, slash - str);
+	if (!rate_str)
+		memory_allocation_error();
+
+	erec = data_unit_parse(loc, rate_str, rate);
+	xfree(rate_str);
+
 	if (erec != NULL)
 		return erec;
 
