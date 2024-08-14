@@ -1305,7 +1305,7 @@ static struct error_record *time_unit_parse(const struct location *loc,
 	else if (strcmp(str, "week") == 0)
 		*unit = 1ULL * 60 * 60 * 24 * 7;
 	else
-		return error(loc, "Wrong rate format");
+		return error(loc, "Wrong time format, expecting second, minute, hour, day or week");
 
 	return NULL;
 }
