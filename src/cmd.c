@@ -181,6 +181,10 @@ static int nft_cmd_enoent_flowtable(struct netlink_ctx *ctx,
 	if (!cmd->handle.flowtable.name)
 		return 0;
 
+	if (nft_cache_update(ctx->nft, NFT_CACHE_TABLE | NFT_CACHE_FLOWTABLE,
+			     ctx->msgs, NULL) < 0)
+		return 0;
+
 	ft = flowtable_lookup_fuzzy(cmd->handle.flowtable.name,
 				    &ctx->nft->cache, &table);
 	/* check table first. */
