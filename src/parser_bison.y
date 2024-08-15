@@ -4523,11 +4523,6 @@ set_elem_stmt		:	COUNTER	close_scope_counter
 			}
 			|       LIMIT   RATE    limit_mode      limit_rate_bytes  limit_burst_bytes	close_scope_limit
 			{
-				if ($5 == 0) {
-					erec_queue(error(&@6, "limit burst must be > 0"),
-						   state->msgs);
-					YYERROR;
-				}
 				$$ = limit_stmt_alloc(&@$);
 				$$->limit.rate  = $4.rate;
 				$$->limit.unit  = $4.unit;
