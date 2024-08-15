@@ -66,7 +66,7 @@ static unsigned int evaluate_cache_add(struct cmd *cmd, unsigned int flags)
 
 		if (cmd->handle.index.id ||
 		    cmd->handle.position.id)
-			flags |= NFT_CACHE_RULE | NFT_CACHE_UPDATE;
+			flags |= NFT_CACHE_FULL | NFT_CACHE_UPDATE;
 		break;
 	default:
 		break;
