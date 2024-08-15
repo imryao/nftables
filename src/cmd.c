@@ -149,6 +149,10 @@ static int nft_cmd_enoent_obj(struct netlink_ctx *ctx, const struct cmd *cmd,
 	if (!cmd->handle.obj.name)
 		return 0;
 
+	if (nft_cache_update(ctx->nft, NFT_CACHE_TABLE | NFT_CACHE_OBJECT,
+			     ctx->msgs, NULL) < 0)
+		return 0;
+
 	obj = obj_lookup_fuzzy(cmd->handle.obj.name, &ctx->nft->cache, &table);
 	/* check table first. */
 	if (!table)
