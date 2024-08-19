@@ -2288,7 +2288,7 @@ static void json_parse_set_stmt_list(struct json_ctx *ctx,
 				      json_t *stmt_json)
 {
 	struct list_head *head;
-	struct stmt *tmp;
+	struct stmt *stmt;
 	json_t *value;
 	size_t index;
 
@@ -2300,9 +2300,14 @@ static void json_parse_set_stmt_list(struct json_ctx *ctx,
 
 	head = stmt_list;
 	json_array_foreach(stmt_json, index, value) {
-		tmp = json_parse_stmt(ctx, value);
-		list_add(&tmp->list, head);
-		head = &tmp->list;
+		stmt = json_parse_stmt(ctx, value);
+		if (!stmt) {
+			json_error(ctx, "Parsing set statements array at index %zd failed.", index);
+			stmt_list_free(stmt_list);
+			return;
+		}
+		list_add(&stmt->list, head);
+		head = &stmt->list;
 	}
 }
 
