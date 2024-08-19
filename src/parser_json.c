@@ -3032,8 +3032,7 @@ static struct cmd *json_parse_cmd_add_chain(struct json_ctx *ctx, json_t *root,
 	chain->hook.name = chain_hookname_lookup(hookstr);
 	if (!chain->hook.name) {
 		json_error(ctx, "Invalid chain hook '%s'.", hookstr);
-		chain_free(chain);
-		return NULL;
+		goto err_free_chain;
 	}
 
 	json_unpack(root, "{s:o}", "dev", &devs);
@@ -3042,8 +3041,7 @@ static struct cmd *json_parse_cmd_add_chain(struct json_ctx *ctx, json_t *root,
 		chain->dev_expr = json_parse_devs(ctx, devs);
 		if (!chain->dev_expr) {
 			json_error(ctx, "Invalid chain dev.");
-			chain_free(chain);
-			return NULL;
+			goto err_free_chain;
 		}
 	}
 
@@ -3051,8 +3049,7 @@ static struct cmd *json_parse_cmd_add_chain(struct json_ctx *ctx, json_t *root,
 		chain->policy = parse_policy(policy);
 		if (!chain->policy) {
 			json_error(ctx, "Unknown policy '%s'.", policy);
-			chain_free(chain);
-			return NULL;
+			goto err_free_chain;
 		}
 	}
 
@@ -3061,6 +3058,11 @@ static struct cmd *json_parse_cmd_add_chain(struct json_ctx *ctx, json_t *root,
 
 	handle_merge(&chain->handle, &h);
 	return cmd_alloc(op, obj, &h, int_loc, chain);
+
+err_free_chain:
+	chain_free(chain);
+	handle_free(&h);
+	return NULL;
 }
 
 static struct cmd *json_parse_cmd_add_rule(struct json_ctx *ctx, json_t *root,
@@ -3100,6 +3102,7 @@ static struct cmd *json_parse_cmd_add_rule(struct json_ctx *ctx, json_t *root,
 
 	if (!json_is_array(tmp)) {
 		json_error(ctx, "Value of property \"expr\" must be an array.");
+		handle_free(&h);
 		return NULL;
 	}
 
@@ -3119,16 +3122,14 @@ static struct cmd *json_parse_cmd_add_rule(struct json_ctx *ctx, json_t *root,
 		if (!json_is_object(value)) {
 			json_error(ctx, "Unexpected expr array element of type %s, expected object.",
 				   json_typename(value));
-			rule_free(rule);
-			return NULL;
+			goto err_free_rule;
 		}
 
 		stmt = json_parse_stmt(ctx, value);
 
 		if (!stmt) {
 			json_error(ctx, "Parsing expr array at index %zd failed.", index);
-			rule_free(rule);
-			return NULL;
+			goto err_free_rule;
 		}
 
 		rule_stmt_append(rule, stmt);
@@ -3138,6 +3139,11 @@ static struct cmd *json_parse_cmd_add_rule(struct json_ctx *ctx, json_t *root,
 		json_object_del(root, "handle");
 
 	return cmd_alloc(op, obj, &h, int_loc, rule);
+
+err_free_rule:
+	rule_free(rule);
+	handle_free(&h);
+	return NULL;
 }
 
 static int string_to_nft_object(const char *str)
@@ -3516,8 +3522,7 @@ static struct cmd *json_parse_cmd_add_object(struct json_ctx *ctx,
 			if (ret < 0 || ret >= (int)sizeof(obj->secmark.ctx)) {
 				json_error(ctx, "Invalid secmark context '%s', max length is %zu.",
 					   tmp, sizeof(obj->secmark.ctx));
-				obj_free(obj);
-				return NULL;
+				goto err_free_obj;
 			}
 		}
 		break;
@@ -3533,8 +3538,7 @@ static struct cmd *json_parse_cmd_add_object(struct json_ctx *ctx,
 			    ret >= (int)sizeof(obj->ct_helper.name)) {
 				json_error(ctx, "Invalid CT helper type '%s', max length is %zu.",
 					   tmp, sizeof(obj->ct_helper.name));
-				obj_free(obj);
-				return NULL;
+				goto err_free_obj;
 			}
 		}
 		if (!json_unpack(root, "{s:s}", "protocol", &tmp)) {
@@ -3544,15 +3548,13 @@ static struct cmd *json_parse_cmd_add_object(struct json_ctx *ctx,
 				obj->ct_helper.l4proto = IPPROTO_UDP;
 			} else {
 				json_error(ctx, "Invalid ct helper protocol '%s'.", tmp);
-				obj_free(obj);
-				return NULL;
+				goto err_free_obj;
 			}
 		}
 		if (!json_unpack(root, "{s:s}", "l3proto", &tmp) &&
 		    parse_family(tmp, &l3proto)) {
 			json_error(ctx, "Invalid ct helper l3proto '%s'.", tmp);
-			obj_free(obj);
-			return NULL;
+			goto err_free_obj;
 		}
 		obj->ct_helper.l3proto = l3proto;
 		break;
@@ -3566,23 +3568,19 @@ static struct cmd *json_parse_cmd_add_object(struct json_ctx *ctx,
 				obj->ct_timeout.l4proto = IPPROTO_UDP;
 			} else {
 				json_error(ctx, "Invalid ct timeout protocol '%s'.", tmp);
-				obj_free(obj);
-				return NULL;
+				goto err_free_obj;
 			}
 		}
 		if (!json_unpack(root, "{s:s}", "l3proto", &tmp) &&
 		    parse_family(tmp, &l3proto)) {
 			json_error(ctx, "Invalid ct timeout l3proto '%s'.", tmp);
-			obj_free(obj);
-			return NULL;
+			goto err_free_obj;
 		}
 		obj->ct_timeout.l3proto = l3proto;
 
 		init_list_head(&obj->ct_timeout.timeout_list);
-		if (json_parse_ct_timeout_policy(ctx, root, obj)) {
-			obj_free(obj);
-			return NULL;
-		}
+		if (json_parse_ct_timeout_policy(ctx, root, obj))
+			goto err_free_obj;
 		break;
 	case NFT_OBJECT_CT_EXPECT:
 		cmd_obj = CMD_OBJ_CT_EXPECT;
@@ -3590,8 +3588,7 @@ static struct cmd *json_parse_cmd_add_object(struct json_ctx *ctx,
 		if (!json_unpack(root, "{s:s}", "l3proto", &tmp) &&
 		    parse_family(tmp, &l3proto)) {
 			json_error(ctx, "Invalid ct expectation l3proto '%s'.", tmp);
-			obj_free(obj);
-			return NULL;
+			goto err_free_obj;
 		}
 		obj->ct_expect.l3proto = l3proto;
 		if (!json_unpack(root, "{s:s}", "protocol", &tmp)) {
@@ -3601,8 +3598,7 @@ static struct cmd *json_parse_cmd_add_object(struct json_ctx *ctx,
 				obj->ct_expect.l4proto = IPPROTO_UDP;
 			} else {
 				json_error(ctx, "Invalid ct expectation protocol '%s'.", tmp);
-				obj_free(obj);
-				return NULL;
+				goto err_free_obj;
 			}
 		}
 		if (!json_unpack(root, "{s:i}", "dport", &i))
@@ -3616,10 +3612,9 @@ static struct cmd *json_parse_cmd_add_object(struct json_ctx *ctx,
 		obj->type = NFT_OBJECT_LIMIT;
 		if (json_unpack_err(ctx, root, "{s:I, s:s}",
 				    "rate", &obj->limit.rate,
-				    "per", &tmp)) {
-			obj_free(obj);
-			return NULL;
-		}
+				    "per", &tmp))
+			goto err_free_obj;
+
 		json_unpack(root, "{s:s}", "rate_unit", &rate_unit);
 		json_unpack(root, "{s:b}", "inv", &inv);
 		json_unpack(root, "{s:i}", "burst", &obj->limit.burst);
@@ -3640,20 +3635,18 @@ static struct cmd *json_parse_cmd_add_object(struct json_ctx *ctx,
 	case CMD_OBJ_SYNPROXY:
 		obj->type = NFT_OBJECT_SYNPROXY;
 		if (json_unpack_err(ctx, root, "{s:i, s:i}",
-				    "mss", &i, "wscale", &j)) {
-			obj_free(obj);
-			return NULL;
-		}
+				    "mss", &i, "wscale", &j))
+			goto err_free_obj;
+
 		obj->synproxy.mss = i;
 		obj->synproxy.wscale = j;
 		obj->synproxy.flags |= NF_SYNPROXY_OPT_MSS;
 		obj->synproxy.flags |= NF_SYNPROXY_OPT_WSCALE;
 		if (!json_unpack(root, "{s:o}", "flags", &jflags)) {
 			flags = json_parse_synproxy_flags(ctx, jflags);
-			if (flags < 0) {
-				obj_free(obj);
-				return NULL;
-			}
+			if (flags < 0)
+				goto err_free_obj;
+
 			obj->synproxy.flags |= flags;
 		}
 		break;
@@ -3665,6 +3658,11 @@ static struct cmd *json_parse_cmd_add_object(struct json_ctx *ctx,
 		json_object_del(root, "handle");
 
 	return cmd_alloc(op, cmd_obj, &h, int_loc, obj);
+
+err_free_obj:
+	obj_free(obj);
+	handle_free(&h);
+	return NULL;
 }
 
 static struct cmd *json_parse_cmd_add(struct json_ctx *ctx,
@@ -3779,8 +3777,7 @@ static struct cmd *json_parse_cmd_replace(struct json_ctx *ctx,
 		if (!json_is_object(value)) {
 			json_error(ctx, "Unexpected expr array element of type %s, expected object.",
 				   json_typename(value));
-			rule_free(rule);
-			return NULL;
+			goto err_free_replace;
 		}
 
 		stmt = json_parse_stmt(ctx, value);
@@ -3788,8 +3785,7 @@ static struct cmd *json_parse_cmd_replace(struct json_ctx *ctx,
 		if (!stmt) {
 			json_error(ctx, "Parsing expr array at index %zd failed.",
 				   index);
-			rule_free(rule);
-			return NULL;
+			goto err_free_replace;
 		}
 
 		rule_stmt_append(rule, stmt);
@@ -3799,6 +3795,11 @@ static struct cmd *json_parse_cmd_replace(struct json_ctx *ctx,
 		json_object_del(root, "handle");
 
 	return cmd_alloc(op, CMD_OBJ_RULE, &h, int_loc, rule);
+
+err_free_replace:
+	rule_free(rule);
+	handle_free(&h);
+	return NULL;
 }
 
 static struct cmd *json_parse_cmd_list_multiple(struct json_ctx *ctx,
