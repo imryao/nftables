@@ -1237,6 +1237,7 @@ static struct expr *json_parse_range_expr(struct json_ctx *ctx,
 	expr_high = json_parse_primary_expr(ctx, high);
 	if (!expr_high) {
 		json_error(ctx, "Invalid high value in range expression.");
+		expr_free(expr_low);
 		return NULL;
 	}
 	return range_expr_alloc(int_loc, expr_low, expr_high);
@@ -1796,6 +1797,8 @@ static struct stmt *json_parse_mangle_stmt(struct json_ctx *ctx,
 		return stmt;
 	default:
 		json_error(ctx, "Invalid mangle statement key expression type.");
+		expr_free(key);
+		expr_free(value);
 		return NULL;
 	}
 }
@@ -2798,6 +2801,7 @@ static struct stmt *json_parse_optstrip_stmt(struct json_ctx *ctx,
 	    expr->etype != EXPR_EXTHDR ||
 	    expr->exthdr.op != NFT_EXTHDR_OP_TCPOPT) {
 		json_error(ctx, "Illegal TCP optstrip argument");
+		expr_free(expr);
 		return NULL;
 	}
 
