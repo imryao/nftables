@@ -408,7 +408,7 @@ Chains of this type perform Native Address Translation based on conntrack
 entries. Only the first packet of a connection actually traverses this chain -
 its rules usually define details of the created conntrack entry (NAT
 statements for instance).
-|route | ip, ip6 | output |
+|route | ip, ip6, inet | output |
 If a packet has traversed a chain of this type and is about to be accepted, a
 new route lookup is performed if relevant parts of the IP header have changed.
 This allows one to e.g. implement policy routing selectors in nftables.

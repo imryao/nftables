@@ -56,7 +56,7 @@ set ip DSCP (diffserv) header field or ipv6 flow labels.
 ---------------------------------------
 # redirect tcp:http from 192.160.0.0/16 to local machine for routing instead of bridging
 # assumes 00:11:22:33:44:55 is local MAC address.
-bridge input meta iif eth0 ip saddr 192.168.0.0/16 tcp dport 80 meta pkttype set unicast ether daddr set 00:11:22:33:44:55
+bridge input meta iif eth0 ip saddr 192.168.0.0/16 tcp dport 80 meta pkttype set host ether daddr set 00:11:22:33:44:55
 -------------------------------------------
 
 .Set IPv4 DSCP header field
