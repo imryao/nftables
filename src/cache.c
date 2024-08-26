@@ -369,13 +369,14 @@ int nft_cache_evaluate(struct nft_ctx *nft, struct list_head *cmds,
 		       struct list_head *msgs, struct nft_cache_filter *filter,
 		       unsigned int *pflags)
 {
-	unsigned int flags = NFT_CACHE_EMPTY;
+	unsigned int flags, batch_flags = NFT_CACHE_EMPTY;
 	struct cmd *cmd;
 
 	list_for_each_entry(cmd, cmds, list) {
 		if (nft_handle_validate(cmd, msgs) < 0)
 			return -1;
 
+		flags = NFT_CACHE_EMPTY;
 		reset_filter(filter);
 
 		switch (cmd->op) {
@@ -401,10 +402,10 @@ int nft_cache_evaluate(struct nft_ctx *nft, struct list_head *cmds,
 			flags |= NFT_CACHE_TABLE;
 			break;
 		case CMD_LIST:
-			flags |= evaluate_cache_list(nft, cmd, flags, filter);
+			flags = evaluate_cache_list(nft, cmd, flags, filter);
 			break;
 		case CMD_MONITOR:
-			flags |= NFT_CACHE_FULL;
+			flags = NFT_CACHE_FULL;
 			break;
 		case CMD_FLUSH:
 			flags = evaluate_cache_flush(cmd, flags, filter);
@@ -419,8 +420,9 @@ int nft_cache_evaluate(struct nft_ctx *nft, struct list_head *cmds,
 		default:
 			break;
 		}
+		batch_flags |= flags;
 	}
-	*pflags = flags;
+	*pflags = batch_flags;
 
 	return 0;
 }
