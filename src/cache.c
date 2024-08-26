@@ -360,6 +360,11 @@ err_name_too_long:
 	return -1;
 }
 
+static void reset_filter(struct nft_cache_filter *filter)
+{
+	memset(&filter->list, 0, sizeof(filter->list));
+}
+
 int nft_cache_evaluate(struct nft_ctx *nft, struct list_head *cmds,
 		       struct list_head *msgs, struct nft_cache_filter *filter,
 		       unsigned int *pflags)
@@ -371,8 +376,7 @@ int nft_cache_evaluate(struct nft_ctx *nft, struct list_head *cmds,
 		if (nft_handle_validate(cmd, msgs) < 0)
 			return -1;
 
-		if (filter->list.table && cmd->op != CMD_LIST)
-			memset(&filter->list, 0, sizeof(filter->list));
+		reset_filter(filter);
 
 		switch (cmd->op) {
 		case CMD_ADD:
