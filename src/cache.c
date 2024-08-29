@@ -386,8 +386,8 @@ int nft_cache_evaluate(struct nft_ctx *nft, struct list_head *cmds,
 		case CMD_CREATE:
 			flags = evaluate_cache_add(cmd, flags);
 			break;
-		case CMD_REPLACE:
-			flags = NFT_CACHE_FULL;
+		case CMD_REPLACE:	/* only for rule */
+			flags = NFT_CACHE_TABLE | NFT_CACHE_SET;
 			break;
 		case CMD_DELETE:
 			flags = evaluate_cache_del(cmd, flags);
