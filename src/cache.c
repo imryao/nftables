@@ -75,6 +75,7 @@ static unsigned int evaluate_cache_del(struct cmd *cmd, unsigned int flags)
 			 NFT_CACHE_SETELEM_MAYBE;
 		break;
 	default:
+		flags = NFT_CACHE_TABLE;
 		break;
 	}
 
@@ -391,8 +392,6 @@ int nft_cache_evaluate(struct nft_ctx *nft, struct list_head *cmds,
 			flags = NFT_CACHE_FULL;
 			break;
 		case CMD_DELETE:
-			flags |= NFT_CACHE_TABLE;
-
 			flags = evaluate_cache_del(cmd, flags);
 			break;
 		case CMD_GET:
