@@ -969,13 +969,14 @@ err_ctx_list:
 static int implicit_chain_cache(struct netlink_ctx *ctx, struct table *table,
 				const char *chain_name)
 {
-	struct nft_cache_filter filter;
+	struct nft_cache_filter filter = {};
 	struct chain *chain;
 	int ret = 0;
 
 	list_for_each_entry(chain, &table->chain_bindings, cache.list) {
 		filter.list.table = table->handle.table.name;
 		filter.list.chain = chain->handle.chain.name;
+
 		ret = rule_init_cache(ctx, table, &filter);
 	}
 
