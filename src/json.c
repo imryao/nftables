@@ -86,6 +86,17 @@ static json_t *set_dtype_json(const struct expr *key)
 	return root;
 }
 
+static json_t *set_key_dtype_json(const struct set *set,
+				  struct output_ctx *octx)
+{
+	bool use_typeof = set->key_typeof_valid;
+
+	if (!use_typeof)
+		return set_dtype_json(set->key);
+
+	return json_pack("{s:o}", "typeof", expr_print_json(set->key, octx));
+}
+
 static json_t *stmt_print_json(const struct stmt *stmt, struct output_ctx *octx)
 {
 	char buf[1024];
@@ -148,7 +159,7 @@ static json_t *set_print_json(struct output_ctx *octx, const struct set *set)
 			"family", family2str(set->handle.family),
 			"name", set->handle.set.name,
 			"table", set->handle.table.name,
-			"type", set_dtype_json(set->key),
+			"type", set_key_dtype_json(set, octx),
 			"handle", set->handle.handle.id);
 
 	if (set->comment)

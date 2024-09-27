@@ -1657,7 +1657,16 @@ static struct expr *json_parse_dtype_expr(struct json_ctx *ctx, json_t *root)
 			compound_expr_add(expr, i);
 		}
 		return expr;
+	} else if (json_is_object(root)) {
+		const char *key;
+		json_t *val;
+
+		if (!json_unpack_stmt(ctx, root, &key, &val) &&
+		    !strcmp(key, "typeof")) {
+			return json_parse_expr(ctx, val);
+		}
 	}
+
 	json_error(ctx, "Invalid set datatype.");
 	return NULL;
 }

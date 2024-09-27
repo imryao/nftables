@@ -332,7 +332,7 @@ ____
 	"auto-merge":* 'BOOLEAN'
 *}}*
 
-'SET_TYPE' := 'STRING' | *[* 'SET_TYPE_LIST' *]*
+'SET_TYPE' := 'STRING' | *[* 'SET_TYPE_LIST' *]* | *{ "typeof":* 'EXPRESSION' *}*
 'SET_TYPE_LIST' := 'STRING' [*,* 'SET_TYPE_LIST' ]
 'SET_POLICY' := *"performance"* | *"memory"*
 'SET_FLAG_LIST' := 'SET_FLAG' [*,* 'SET_FLAG_LIST' ]
@@ -372,8 +372,9 @@ that they translate a unique key to a value.
 	Automatic merging of adjacent/overlapping set elements in interval sets.
 
 ==== TYPE
-The set type might be a string, such as *"ipv4_addr"* or an array
-consisting of strings (for concatenated types).
+The set type might be a string, such as *"ipv4_addr"*, an array
+consisting of strings (for concatenated types) or a *typeof* object containing
+an expression to extract the type from.
 
 ==== ELEM
 A single set element might be given as string, integer or boolean value for
