@@ -1179,7 +1179,7 @@ ____
 
 Construct a payload expression, i.e. a reference to a certain part of packet
 data. The first form creates a raw payload expression to point at a random
-number (*len*) of bytes at a certain offset (*offset*) from a given reference
+number (*len*) of bits at a certain offset (*offset*) from a given reference
 point (*base*). The following *base* values are accepted:
 
 *"ll"*::
