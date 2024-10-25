@@ -416,6 +416,24 @@ const struct datatype xinteger_type = {
 	.parse		= integer_type_parse,
 };
 
+static void queue_type_print(const struct expr *expr, struct output_ctx *octx)
+{
+	nft_gmp_print(octx, "queue");
+}
+
+/* Dummy queue_type for set declaration with typeof, see
+ * constant_expr_build_udata and constant_expr_parse_udata,
+ * basetype is used for elements.
+*/
+const struct datatype queue_type = {
+	.type		= TYPE_INTEGER,
+	.is_typeof	= 1,
+	.name		= "queue",
+	.desc		= "queue",
+	.basetype	= &integer_type,
+	.print		= queue_type_print,
+};
+
 static void string_type_print(const struct expr *expr, struct output_ctx *octx)
 {
 	unsigned int len = div_round_up(expr->len, BITS_PER_BYTE);

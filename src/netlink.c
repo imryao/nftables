@@ -1456,7 +1456,11 @@ key_end:
 		data = netlink_alloc_data(&netlink_location, &nld,
 					  set->data->dtype->type == TYPE_VERDICT ?
 					  NFT_REG_VERDICT : NFT_REG_1);
-		datatype_set(data, set->data->dtype);
+
+		if (set->data->dtype->is_typeof)
+			datatype_set(data, set->data->dtype->basetype);
+		else
+			datatype_set(data, set->data->dtype);
 		data->byteorder = set->data->byteorder;
 
 		if (set->data->dtype->subtypes) {

@@ -380,6 +380,84 @@ struct expr *variable_expr_alloc(const struct location *loc,
 	return expr;
 }
 
+#define NFTNL_UDATA_CONSTANT_TYPE 0
+#define NFTNL_UDATA_CONSTANT_MAX NFTNL_UDATA_CONSTANT_TYPE
+
+#define CONSTANT_EXPR_NFQUEUE_ID 0
+
+static int constant_expr_build_udata(struct nftnl_udata_buf *udbuf,
+				     const struct expr *expr)
+{
+	uint32_t type;
+
+	if (expr->dtype == &queue_type)
+		type = CONSTANT_EXPR_NFQUEUE_ID;
+	else
+		return -1;
+
+	if (!nftnl_udata_put_u32(udbuf, NFTNL_UDATA_CONSTANT_TYPE, type))
+		return -1;
+
+	return 0;
+}
+
+static int constant_parse_udata(const struct nftnl_udata *attr, void *data)
+{
+	const struct nftnl_udata **ud = data;
+	uint8_t type = nftnl_udata_type(attr);
+	uint8_t len = nftnl_udata_len(attr);
+	uint32_t value;
+
+	switch (type) {
+	case NFTNL_UDATA_CONSTANT_TYPE:
+		if (len != sizeof(uint32_t))
+			return -1;
+
+		value = nftnl_udata_get_u32(attr);
+		switch (value) {
+		case CONSTANT_EXPR_NFQUEUE_ID:
+			break;
+		default:
+			return -1;
+		}
+		break;
+	default:
+		return 0;
+	}
+
+	ud[type] = attr;
+
+	return 0;
+}
+
+static struct expr *constant_expr_parse_udata(const struct nftnl_udata *attr)
+{
+	const struct nftnl_udata *ud[NFTNL_UDATA_CONSTANT_MAX + 1] = {};
+	const struct datatype *dtype = NULL;
+	uint32_t type;
+	int err;
+
+	err = nftnl_udata_parse(nftnl_udata_get(attr), nftnl_udata_len(attr),
+				constant_parse_udata, ud);
+	if (err < 0)
+		return NULL;
+
+	if (!ud[NFTNL_UDATA_CONSTANT_TYPE])
+		return NULL;
+
+	type = nftnl_udata_get_u32(ud[NFTNL_UDATA_CONSTANT_TYPE]);
+	switch (type) {
+	case CONSTANT_EXPR_NFQUEUE_ID:
+		dtype = &queue_type;
+		break;
+	default:
+		break;
+	}
+
+	return constant_expr_alloc(&internal_location, dtype, BYTEORDER_HOST_ENDIAN,
+				   16, NULL);
+}
+
 static void constant_expr_print(const struct expr *expr,
 				 struct output_ctx *octx)
 {
@@ -410,6 +488,8 @@ static const struct expr_ops constant_expr_ops = {
 	.cmp		= constant_expr_cmp,
 	.clone		= constant_expr_clone,
 	.destroy	= constant_expr_destroy,
+	.build_udata	= constant_expr_build_udata,
+	.parse_udata	= constant_expr_parse_udata,
 };
 
 struct expr *constant_expr_alloc(const struct location *loc,

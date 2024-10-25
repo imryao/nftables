@@ -1970,6 +1970,10 @@ typeof_data_expr	:	INTERVAL	typeof_expr
 			{
 				$$ = $1;
 			}
+			|	QUEUE
+			{
+				$$ = constant_expr_alloc(&@$, &queue_type, BYTEORDER_HOST_ENDIAN, 16, NULL);
+			}
 			;
 
 typeof_expr		:	primary_expr
