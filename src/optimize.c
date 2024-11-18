@@ -38,6 +38,8 @@ static bool __expr_cmp(const struct expr *expr_a, const struct expr *expr_b)
 {
 	if (expr_a->etype != expr_b->etype)
 		return false;
+	if (expr_a->len != expr_b->len)
+		return false;
 
 	switch (expr_a->etype) {
 	case EXPR_PAYLOAD:
