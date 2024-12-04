@@ -82,6 +82,7 @@ static void remove_overlapping_range(struct set_automerge_ctx *ctx,
 				     struct expr *prev, struct expr *i)
 {
 	if (i->flags & EXPR_F_KERNEL) {
+		i->location = prev->location;
 		purge_elem(ctx, i);
 		return;
 	}
@@ -100,12 +101,14 @@ static bool merge_ranges(struct set_automerge_ctx *ctx,
 			 struct range *prev_range, struct range *range)
 {
 	if (prev->flags & EXPR_F_KERNEL) {
+		prev->location = i->location;
 		purge_elem(ctx, prev);
 		expr_free(i->key->left);
 		i->key->left = expr_get(prev->key->left);
 		mpz_set(prev_range->high, range->high);
 		return true;
 	} else if (i->flags & EXPR_F_KERNEL) {
+		i->location = prev->location;
 		purge_elem(ctx, i);
 		expr_free(prev->key->right);
 		prev->key->right = expr_get(i->key->right);
@@ -300,6 +303,7 @@ static void __adjust_elem_left(struct set *set, struct expr *prev, struct expr *
 static void adjust_elem_left(struct set *set, struct expr *prev, struct expr *i,
 			     struct expr *purge)
 {
+	prev->location = i->location;
 	remove_elem(prev, set, purge);
 	__adjust_elem_left(set, prev, i);
 
@@ -319,6 +323,7 @@ static void __adjust_elem_right(struct set *set, struct expr *prev, struct expr 
 static void adjust_elem_right(struct set *set, struct expr *prev, struct expr *i,
 			      struct expr *purge)
 {
+	prev->location = i->location;
 	remove_elem(prev, set, purge);
 	__adjust_elem_right(set, prev, i);
 
@@ -330,6 +335,8 @@ static void split_range(struct set *set, struct expr *prev, struct expr *i,
 			struct expr *purge)
 {
 	struct expr *clone;
+
+	prev->location = i->location;
 
 	if (prev->flags & EXPR_F_KERNEL) {
 		clone = expr_clone(prev);
@@ -418,8 +425,10 @@ static int setelem_delete(struct list_head *msgs, struct set *set,
 		if (mpz_cmp(prev_range.low, range.low) == 0 &&
 		    mpz_cmp(prev_range.high, range.high) == 0) {
 			if (elem->flags & EXPR_F_REMOVE) {
-				if (prev->flags & EXPR_F_KERNEL)
+				if (prev->flags & EXPR_F_KERNEL) {
+					prev->location = elem->location;
 					list_move_tail(&prev->list, &purge->expressions);
+				}
 
 				list_del(&elem->list);
 				expr_free(elem);
