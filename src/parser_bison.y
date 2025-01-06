@@ -233,6 +233,7 @@ int nft_lex(void *, void *, void *);
 
 %token TOKEN_EOF 0		"end of file"
 %token JUNK			"junk"
+%token CRLF			"CRLF line terminators"
 
 %token NEWLINE			"newline"
 %token COLON			"colon"

@@ -114,6 +114,7 @@ extern void	yyset_column(int, yyscan_t);
 
 space		[ ]
 tab		\t
+newline_crlf	\r\n
 newline		\n
 digit		[0-9]
 hexdigit	[0-9a-fA-F]
@@ -861,6 +862,8 @@ addrstring	({macaddr}|{ip4addr}|{ip6addr})
 				yylval->string = xstrdup(yytext);
 				return STRING;
 			}
+
+{newline_crlf}		{	return CRLF; }
 
 \\{newline}		{
 				reset_pos(yyget_extra(yyscanner), yylloc);
