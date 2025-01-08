@@ -1535,6 +1535,9 @@ void monitor_free(struct monitor *m)
 
 void cmd_free(struct cmd *cmd)
 {
+	if (cmd == NULL)
+		return;
+
 	handle_free(&cmd->handle);
 	if (cmd->data != NULL) {
 		switch (cmd->obj) {
