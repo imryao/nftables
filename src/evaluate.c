@@ -68,6 +68,33 @@ static int __fmtstring(3, 4) set_error(struct eval_ctx *ctx,
 	return -1;
 }
 
+static const char *stmt_name(const struct stmt *stmt)
+{
+	switch (stmt->ops->type) {
+	case STMT_NAT:
+		switch (stmt->nat.type) {
+		case NFT_NAT_SNAT:
+			return "snat";
+		case NFT_NAT_DNAT:
+			return "dnat";
+		case NFT_NAT_REDIR:
+			return "redirect";
+		case NFT_NAT_MASQ:
+			return "masquerade";
+		}
+		break;
+	default:
+		break;
+	}
+
+	return stmt->ops->name;
+}
+
+static int stmt_error_range(struct eval_ctx *ctx, const struct stmt *stmt, const struct expr *e)
+{
+	return expr_error(ctx->msgs, e, "%s: range argument not supported", stmt_name(stmt));
+}
+
 static void key_fix_dtype_byteorder(struct expr *key)
 {
 	const struct datatype *dtype = key->dtype;
@@ -2916,13 +2943,8 @@ static int stmt_evaluate_exthdr(struct eval_ctx *ctx, struct stmt *stmt)
 	if (ret < 0)
 		return ret;
 
-	switch (stmt->exthdr.val->etype) {
-	case EXPR_RANGE:
-		return expr_error(ctx->msgs, stmt->exthdr.val,
-				   "cannot be a range");
-	default:
-		break;
-	}
+	if (stmt->exthdr.val->etype == EXPR_RANGE)
+		return stmt_error_range(ctx, stmt, stmt->exthdr.val);
 
 	return 0;
 }
@@ -2949,6 +2971,9 @@ static int stmt_evaluate_payload(struct eval_ctx *ctx, struct stmt *stmt)
 	    byteorder_conversion(ctx, &stmt->payload.val,
 				 payload->byteorder) < 0)
 		return -1;
+
+	if (stmt->payload.val->etype == EXPR_RANGE)
+		return stmt_error_range(ctx, stmt, stmt->payload.val);
 
 	need_csum = stmt_evaluate_payload_need_csum(payload);
 
@@ -3090,6 +3115,12 @@ static int stmt_evaluate_meta(struct eval_ctx *ctx, struct stmt *stmt)
 				&stmt->meta.expr);
 	ctx->stmt_len = 0;
 
+	if (ret < 0)
+		return ret;
+
+	if (stmt->meta.expr->etype == EXPR_RANGE)
+		return stmt_error_range(ctx, stmt, stmt->meta.expr);
+
 	return ret;
 }
 
@@ -3112,6 +3143,9 @@ static int stmt_evaluate_ct(struct eval_ctx *ctx, struct stmt *stmt)
 	if (stmt->ct.key == NFT_CT_SECMARK && expr_is_constant(stmt->ct.expr))
 		return stmt_error(ctx, stmt,
 				  "ct secmark must not be set to constant value");
+
+	if (stmt->ct.expr->etype == EXPR_RANGE)
+		return stmt_error_range(ctx, stmt, stmt->ct.expr);
 
 	return 0;
 }
@@ -3617,28 +3651,6 @@ static int nat_evaluate_transport(struct eval_ctx *ctx, struct stmt *stmt,
 	return 0;
 }
 
-static const char *stmt_name(const struct stmt *stmt)
-{
-	switch (stmt->ops->type) {
-	case STMT_NAT:
-		switch (stmt->nat.type) {
-		case NFT_NAT_SNAT:
-			return "snat";
-		case NFT_NAT_DNAT:
-			return "dnat";
-		case NFT_NAT_REDIR:
-			return "redirect";
-		case NFT_NAT_MASQ:
-			return "masquerade";
-		}
-		break;
-	default:
-		break;
-	}
-
-	return stmt->ops->name;
-}
-
 static int stmt_evaluate_l3proto(struct eval_ctx *ctx,
 				 struct stmt *stmt, uint8_t family)
 {
@@ -4032,6 +4044,9 @@ static int stmt_evaluate_dup(struct eval_ctx *ctx, struct stmt *stmt)
 						&stmt->dup.dev);
 			if (err < 0)
 				return err;
+
+			if (stmt->dup.dev->etype == EXPR_RANGE)
+				return stmt_error_range(ctx, stmt, stmt->dup.dev);
 		}
 		break;
 	case NFPROTO_NETDEV:
@@ -4050,6 +4065,10 @@ static int stmt_evaluate_dup(struct eval_ctx *ctx, struct stmt *stmt)
 	default:
 		return stmt_error(ctx, stmt, "unsupported family");
 	}
+
+	if (stmt->dup.to->etype == EXPR_RANGE)
+		return stmt_error_range(ctx, stmt, stmt->dup.to);
+
 	return 0;
 }
 
@@ -4070,6 +4089,9 @@ static int stmt_evaluate_fwd(struct eval_ctx *ctx, struct stmt *stmt)
 		if (err < 0)
 			return err;
 
+		if (stmt->fwd.dev->etype == EXPR_RANGE)
+			return stmt_error_range(ctx, stmt, stmt->fwd.dev);
+
 		if (stmt->fwd.addr != NULL) {
 			switch (stmt->fwd.family) {
 			case NFPROTO_IPV4:
@@ -4088,6 +4110,9 @@ static int stmt_evaluate_fwd(struct eval_ctx *ctx, struct stmt *stmt)
 						&stmt->fwd.addr);
 			if (err < 0)
 				return err;
+
+			if (stmt->fwd.addr->etype == EXPR_RANGE)
+				return stmt_error_range(ctx, stmt, stmt->fwd.addr);
 		}
 		break;
 	default:
