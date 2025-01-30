@@ -3032,41 +3032,54 @@ static void stmt_payload_binop_postprocess(struct rule_pp_ctx *ctx)
 		break;
 	}
 	case EXPR_PAYLOAD: /* II? */
-		value = expr->right;
-		if (value->etype != EXPR_VALUE)
+		payload = expr->left;
+		mask = expr->right;
+
+		if (mask->etype != EXPR_VALUE)
+			return;
+
+		if (!payload_expr_cmp(stmt->payload.expr, payload))
 			return;
 
 		switch (expr->op) {
-		case OP_AND: /* IIa */
-			payload = expr->left;
+		case OP_AND: { /* IIa */
+			mpz_t tmp;
+
+			mpz_init(tmp);
+			mpz_set(tmp, mask->value);
+
 			mpz_init_bitmask(bitmask, payload->len);
-			mpz_xor(bitmask, bitmask, value->value);
-			mpz_set(value->value, bitmask);
+			mpz_xor(bitmask, bitmask, mask->value);
+			mpz_set(mask->value, bitmask);
 			mpz_clear(bitmask);
+
+			stmt_payload_binop_pp(ctx, expr);
+			if (!payload_is_known(expr->left)) {
+				mpz_set(mask->value, tmp);
+				mpz_clear(tmp);
+				return;
+			}
+
+			mpz_clear(tmp);
+
+			/* Mask was used to match payload, i.e. user asked to
+			 * clear the payload expression.
+			 * The "mask" value becomes new stmt->payload.value
+			 * so set this to 0.
+			 */
+			mpz_set_ui(mask->value, 0);
 			break;
-		case OP_OR: /* IIb */
+		}
+		case OP_OR:  /* IIb */
+			stmt_payload_binop_pp(ctx, expr);
+			if (!payload_is_known(expr->left))
+				return;
 			break;
-		default: /* No idea */
+		default: /* No idea what to do */
 			return;
 		}
-
-		stmt_payload_binop_pp(ctx, expr);
-		if (!payload_is_known(expr->left))
-			return;
 
 		expr_free(stmt->payload.expr);
-
-		switch (expr->op) {
-		case OP_AND:
-			/* Mask was used to match payload, i.e.
-			 * user asked to set zero value.
-			 */
-			mpz_set_ui(value->value, 0);
-			break;
-		default:
-			break;
-		}
-
 		stmt->payload.expr = expr_get(expr->left);
 		stmt->payload.val = expr_get(expr->right);
 		expr_free(expr);
