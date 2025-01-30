@@ -973,6 +973,7 @@ static unsigned int mask_length(const struct expr *mask)
  * @expr:	the payload expression
  * @mask:	mask to use when searching templates
  * @ctx:	protocol context
+ * @shift:	shift adjustment to fix up RHS value
  *
  * Walk the template list and determine if a match can be found without
  * using the provided mask.
@@ -1031,6 +1032,59 @@ bool payload_expr_trim(struct expr *expr, struct expr *mask,
 	}
 
 	return false;
+}
+
+/**
+ * payload_expr_trim_force - adjust payload len/offset according to mask
+ *
+ * @expr:	the payload expression
+ * @mask:	mask to use when searching templates
+ * @shift:	shift adjustment to fix up RHS value
+ *
+ * Force-trim an unknown payload expression according to mask.
+ *
+ * This is only useful for unkown payload expressions that need
+ * to be printed in raw syntax (@base,offset,length).  The kernel
+ * can only deal with byte-divisible offsets/length, e.g. @th,16,8.
+ * In such case we might be able to get rid of the mask.
+ * @base,offset,length & MASK OPERATOR VALUE then becomes
+ * @base,offset,length VALUE, where at least one of offset increases
+ * and length decreases.
+ *
+ * This function also returns the shift for the right hand
+ * constant side of the expression.
+ *
+ * @return: true if @expr was adjusted and mask can be discarded.
+ */
+bool payload_expr_trim_force(struct expr *expr, struct expr *mask, unsigned int *shift)
+{
+	unsigned int payload_offset = expr->payload.offset;
+	unsigned int mask_len = mask_length(mask);
+	unsigned int off, real_len;
+
+	if (payload_is_known(expr) || expr->len <= mask_len)
+		return false;
+
+	/* This provides the payload offset to use.
+	 * mask->len is the total length of the mask, e.g. 16.
+	 * mask_len holds the last bit number that will be zeroed,
+	 */
+	off = round_up(mask->len, BITS_PER_BYTE) - mask_len;
+	payload_offset += off;
+
+	/* kernel only allows offsets <= 255 */
+	if (round_up(payload_offset, BITS_PER_BYTE) > 255)
+		return false;
+
+	real_len = mpz_popcount(mask->value);
+	if (real_len > expr->len)
+		return false;
+
+	expr->payload.offset = payload_offset;
+	expr->len = real_len;
+
+	*shift = mask_to_offset(mask);
+	return true;
 }
 
 /**
