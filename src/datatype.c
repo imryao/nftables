@@ -1379,11 +1379,35 @@ static const struct symbol_table boolean_tbl = {
 	},
 };
 
+static struct error_record *boolean_type_parse(struct parse_ctx *ctx,
+					       const struct expr *sym,
+					       struct expr **res)
+{
+	struct error_record *erec;
+	int num;
+
+	erec = integer_type_parse(ctx, sym, res);
+	if (erec)
+		return erec;
+
+	if (mpz_cmp_ui((*res)->value, 0))
+		num = 1;
+	else
+		num = 0;
+
+	expr_free(*res);
+
+	*res = constant_expr_alloc(&sym->location, &boolean_type,
+				   BYTEORDER_HOST_ENDIAN, 1, &num);
+	return NULL;
+}
+
 const struct datatype boolean_type = {
 	.type		= TYPE_BOOLEAN,
 	.name		= "boolean",
 	.desc		= "boolean type",
 	.size		= 1,
+	.parse		= boolean_type_parse,
 	.basetype	= &integer_type,
 	.sym_tbl	= &boolean_tbl,
 	.json		= boolean_type_json,
