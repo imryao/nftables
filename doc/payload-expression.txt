@@ -669,16 +669,16 @@ TCP option matching also supports raw expression syntax to access arbitrary opti
 |Keyword| Description | IP option fields
 |lsrr|
 Loose Source Route |
-type, length, ptr, addr
+length, ptr, addr
 |ra|
 Router Alert |
-type, length, value
+length, value
 |rr|
 Record Route |
-type, length, ptr, addr
+length, ptr, addr
 |ssrr|
 Strict Source Route |
-type, length, ptr, addr
+length, ptr, addr
 |============================
 
 .finding TCP options

@@ -5556,6 +5556,9 @@ ip_hdr_expr		:	IP	ip_hdr_field	close_scope_ip
 					erec_queue(error(&@1, "unknown ip option type/field"), state->msgs);
 					YYERROR;
 				}
+
+				if ($4 == IPOPT_FIELD_TYPE)
+					$$->exthdr.flags = NFT_EXTHDR_F_PRESENT;
 			}
 			|	IP	OPTION	ip_option_type close_scope_ip
 			{
