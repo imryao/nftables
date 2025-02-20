@@ -4785,6 +4785,9 @@ static int set_evaluate(struct eval_ctx *ctx, struct set *set)
 		       sizeof(set->desc.field_len));
 		set->desc.field_count = set->key->field_count;
 		set->flags |= NFT_SET_CONCAT;
+
+		if (set->automerge)
+			set->automerge = false;
 	}
 
 	if (set_is_anonymous(set->flags) && set->key->etype == EXPR_CONCAT) {
