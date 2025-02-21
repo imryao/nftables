@@ -1204,12 +1204,12 @@ static int __expr_evaluate_range(struct eval_ctx *ctx, struct expr **expr)
 	return 0;
 }
 
-static int expr_evaluate_range(struct eval_ctx *ctx, struct expr **expr)
+static int expr_evaluate_range(struct eval_ctx *ctx, struct expr **exprp)
 {
-	struct expr *range = *expr, *left, *right;
+	struct expr *range = *exprp, *left, *right;
 	int rc;
 
-	rc = __expr_evaluate_range(ctx, expr);
+	rc = __expr_evaluate_range(ctx, exprp);
 	if (rc)
 		return rc;
 
@@ -1218,6 +1218,12 @@ static int expr_evaluate_range(struct eval_ctx *ctx, struct expr **expr)
 
 	if (mpz_cmp(left->value, right->value) > 0)
 		return expr_error(ctx->msgs, range, "Range negative size");
+
+	if (mpz_cmp(left->value, right->value) == 0) {
+		*exprp = expr_get(left);
+		expr_free(range);
+		return 0;
+	}
 
 	datatype_set(range, left->dtype);
 	range->flags |= EXPR_F_CONSTANT;
