@@ -323,10 +323,10 @@ functions.
 |Keyword| Description| Type
 |oif|
 Output interface index|
-integer (32 bit)
+iface_index
 |oifname|
 Output interface name|
-string
+ifname
 |type|
 Address type |
 fib_addrtype
