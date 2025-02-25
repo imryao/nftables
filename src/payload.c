@@ -822,7 +822,8 @@ static bool payload_may_dependency_kill(struct payload_dep_ctx *ctx,
 	if (expr->payload.base != PROTO_BASE_TRANSPORT_HDR)
 		return true;
 
-	if (dep->left->payload.base != PROTO_BASE_TRANSPORT_HDR)
+	if (dep->left->etype != EXPR_PAYLOAD ||
+	    dep->left->payload.base != PROTO_BASE_TRANSPORT_HDR)
 		return true;
 
 	if (dep->left->payload.desc == &proto_icmp)
