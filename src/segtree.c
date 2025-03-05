@@ -472,7 +472,7 @@ static struct expr *interval_to_string(struct expr *low, struct expr *i, const m
 
 	expr = constant_expr_alloc(&low->location, low->dtype,
 				   BYTEORDER_HOST_ENDIAN,
-				   (str_len + 1) * BITS_PER_BYTE, data);
+				   len * BITS_PER_BYTE, data);
 
 	return __expr_to_set_elem(low, expr);
 }
