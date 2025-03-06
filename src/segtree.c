@@ -110,47 +110,6 @@ struct expr *get_set_intervals(const struct set *set, const struct expr *init)
 	return new_init;
 }
 
-static struct expr *get_set_interval_find(const struct set *cache_set,
-					  struct expr *left,
-					  struct expr *right)
-{
-	const struct set *set = cache_set;
-	struct expr *range = NULL;
-	struct expr *i;
-	mpz_t val;
-
-	mpz_init2(val, set->key->len);
-
-	list_for_each_entry(i, &set->init->expressions, list) {
-		switch (i->key->etype) {
-		case EXPR_VALUE:
-			if (expr_basetype(i->key)->type != TYPE_STRING)
-				break;
-			/* string type, check if its a range (wildcard), so
-			 * fall through.
-			 */
-		case EXPR_PREFIX:
-		case EXPR_RANGE:
-			range_expr_value_low(val, i);
-			if (left && mpz_cmp(left->key->value, val))
-				break;
-
-			range_expr_value_high(val, i);
-			if (right && mpz_cmp(right->key->value, val))
-				break;
-
-			range = expr_clone(i->key);
-			goto out;
-		default:
-			break;
-		}
-	}
-out:
-	mpz_clear(val);
-
-	return range;
-}
-
 static struct expr *expr_value(struct expr *expr)
 {
 	switch (expr->etype) {
@@ -163,6 +122,48 @@ static struct expr *expr_value(struct expr *expr)
 	default:
 		BUG("invalid expression type %s\n", expr_name(expr));
 	}
+}
+
+static struct expr *get_set_interval_find(const struct set *cache_set,
+					  struct expr *left,
+					  struct expr *right)
+{
+	const struct set *set = cache_set;
+	struct expr *range = NULL;
+	struct expr *i, *key;
+	mpz_t val;
+
+	mpz_init2(val, set->key->len);
+
+	list_for_each_entry(i, &set->init->expressions, list) {
+		key = expr_value(i);
+		switch (key->etype) {
+		case EXPR_VALUE:
+			if (expr_basetype(i->key)->type != TYPE_STRING)
+				break;
+			/* string type, check if its a range (wildcard), so
+			 * fall through.
+			 */
+		case EXPR_PREFIX:
+		case EXPR_RANGE:
+			range_expr_value_low(val, i);
+			if (left && mpz_cmp(expr_value(left)->value, val))
+				break;
+
+			range_expr_value_high(val, i);
+			if (right && mpz_cmp(expr_value(right)->value, val))
+				break;
+
+			range = expr_clone(i);
+			goto out;
+		default:
+			break;
+		}
+	}
+out:
+	mpz_clear(val);
+
+	return range;
 }
 
 static struct expr *__expr_to_set_elem(struct expr *low, struct expr *expr)
