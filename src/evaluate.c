@@ -4796,15 +4796,19 @@ static int set_evaluate(struct eval_ctx *ctx, struct set *set)
 			return table_not_found(ctx);
 
 		existing_set = set_cache_find(table, set->handle.set.name);
-		if (!existing_set)
+		if (existing_set) {
+			if (existing_set->flags & NFT_SET_EVAL) {
+				uint32_t existing_flags = existing_set->flags & ~NFT_SET_EVAL;
+				uint32_t new_flags = set->flags & ~NFT_SET_EVAL;
+
+				if (existing_flags == new_flags)
+					set->flags |= NFT_SET_EVAL;
+			}
+
+			if (set_is_interval(set->flags) && !set_is_interval(existing_set->flags))
+				return set_error(ctx, set, "existing %s lacks interval flag", type);
+		} else {
 			set_cache_add(set_get(set), table);
-
-		if (existing_set && existing_set->flags & NFT_SET_EVAL) {
-			uint32_t existing_flags = existing_set->flags & ~NFT_SET_EVAL;
-			uint32_t new_flags = set->flags & ~NFT_SET_EVAL;
-
-			if (existing_flags == new_flags)
-				set->flags |= NFT_SET_EVAL;
 		}
 	}
 
