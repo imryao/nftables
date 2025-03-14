@@ -1,12 +1,27 @@
 #!/bin/bash
 
 dir=$(dirname $0)/nft-f/
+tmpfile=$(mktemp)
+
+cleanup()
+{
+	rm -f "$tmpfile"
+}
+
+trap cleanup EXIT
 
 for f in $dir/*; do
-	$NFT --check -f "$f"
+	echo "Check $f"
+	$NFT --check -f "$f" 2> "$tmpfile"
 
 	if [ $? -ne 1 ]; then
 		echo "Bogus input file $f did not cause expected error code" 1>&2
+		exit 111
+	fi
+
+	if grep AddressSanitizer "$tmpfile"; then
+		echo "Address sanitizer splat for $f" 1>&2
+		cat "$tmpfile"
 		exit 111
 	fi
 done
