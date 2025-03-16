@@ -798,8 +798,8 @@ int nft_lex(void *, void *, void *);
 
 %type <expr>			symbol_expr verdict_expr integer_expr variable_expr chain_expr policy_expr
 %destructor { expr_free($$); }	symbol_expr verdict_expr integer_expr variable_expr chain_expr policy_expr
-%type <expr>			primary_expr shift_expr and_expr typeof_expr typeof_data_expr typeof_key_expr typeof_verdict_expr
-%destructor { expr_free($$); }	primary_expr shift_expr and_expr typeof_expr typeof_data_expr typeof_key_expr typeof_verdict_expr
+%type <expr>			primary_expr shift_expr and_expr primary_typeof_expr typeof_expr typeof_data_expr typeof_key_expr typeof_verdict_expr
+%destructor { expr_free($$); }	primary_expr shift_expr and_expr primary_typeof_expr typeof_expr typeof_data_expr typeof_key_expr typeof_verdict_expr
 %type <expr>			exclusive_or_expr inclusive_or_expr
 %destructor { expr_free($$); }	exclusive_or_expr inclusive_or_expr
 %type <expr>			basic_expr
@@ -1999,7 +1999,7 @@ typeof_data_expr	:	INTERVAL	typeof_expr
 			}
 			;
 
-typeof_expr		:	primary_expr
+primary_typeof_expr	:	primary_expr
 			{
 				if (expr_ops($1)->build_udata == NULL) {
 					erec_queue(error(&@1, "primary expression type '%s' lacks typeof serialization", expr_ops($1)->name),
@@ -2010,7 +2010,13 @@ typeof_expr		:	primary_expr
 
 				$$ = $1;
 			}
-			|	typeof_expr		DOT		primary_expr
+			;
+
+typeof_expr		:	primary_typeof_expr
+			{
+				$$ = $1;
+			}
+			|	typeof_expr		DOT		primary_typeof_expr
 			{
 				struct location rhs[] = {
 					[1]	= @2,
