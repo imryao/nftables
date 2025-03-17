@@ -4804,9 +4804,6 @@ static int set_evaluate(struct eval_ctx *ctx, struct set *set)
 				if (existing_flags == new_flags)
 					set->flags |= NFT_SET_EVAL;
 			}
-
-			if (set_is_interval(set->flags) && !set_is_interval(existing_set->flags))
-				return set_error(ctx, set, "existing %s lacks interval flag", type);
 		} else {
 			set_cache_add(set_get(set), table);
 		}
@@ -4896,6 +4893,9 @@ static int set_evaluate(struct eval_ctx *ctx, struct set *set)
 
 		return 0;
 	}
+
+	if (existing_set && set_is_interval(set->flags) && !set_is_interval(existing_set->flags))
+		return set_error(ctx, set, "existing %s lacks interval flag", type);
 
 	set->existing_set = existing_set;
 
