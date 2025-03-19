@@ -5086,6 +5086,10 @@ static int rule_cache_update(struct eval_ctx *ctx, enum cmd_ops op)
 	if (!table)
 		return table_not_found(ctx);
 
+	/* chain is anonymous, adding new rules via index is not supported. */
+	if (!rule->handle.chain.name)
+		return 0;
+
 	chain = chain_cache_find(table, rule->handle.chain.name);
 	if (!chain)
 		return chain_not_found(ctx);
