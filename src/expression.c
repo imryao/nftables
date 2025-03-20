@@ -832,6 +832,17 @@ void relational_expr_pctx_update(struct proto_ctx *ctx,
 				    i->key->etype == EXPR_VALUE)
 					ops->pctx_update(ctx, &expr->location, left, i->key);
 			}
+		} else if (ops == &meta_expr_ops &&
+			   right->etype == EXPR_SET_REF) {
+			const struct expr *key = right->set->key;
+			struct expr *tmp;
+
+			tmp = constant_expr_alloc(&expr->location, key->dtype,
+						  key->byteorder, key->len,
+						  NULL);
+
+			ops->pctx_update(ctx, &expr->location, left, tmp);
+			expr_free(tmp);
 		}
 	}
 }
