@@ -3851,6 +3851,10 @@ static int stmt_evaluate_nat_map(struct eval_ctx *ctx, struct stmt *stmt)
 	int addr_type;
 	int err;
 
+	if (stmt->nat.proto)
+		return stmt_binary_error(ctx, stmt, stmt->nat.proto,
+				  "nat map and protocol are mutually exclusive");
+
 	if (stmt->nat.family == NFPROTO_INET)
 		expr_family_infer(pctx, stmt->nat.addr, &stmt->nat.family);
 
