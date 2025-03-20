@@ -2163,7 +2163,10 @@ static int expr_evaluate_mapping(struct eval_ctx *ctx, struct expr **expr)
 				  "Key must be a constant");
 	mapping->flags |= mapping->left->flags & EXPR_F_SINGLETON;
 
-	assert(set->data != NULL);
+	/* This can happen for malformed map definitions */
+	if (!set->data)
+		return set_error(ctx, set, "map has no mapping data");
+
 	if (!set_is_anonymous(set->flags) &&
 	    set->data->flags & EXPR_F_INTERVAL)
 		datalen = set->data->len / 2;
