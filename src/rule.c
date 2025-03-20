@@ -2521,10 +2521,16 @@ static int do_command_list(struct netlink_ctx *ctx, struct cmd *cmd)
 	if (nft_output_json(&ctx->nft->output))
 		return do_command_list_json(ctx, cmd);
 
-	if (cmd->handle.table.name != NULL)
+	if (cmd->handle.table.name != NULL) {
 		table = table_cache_find(&ctx->nft->cache.table_cache,
 					 cmd->handle.table.name,
 					 cmd->handle.family);
+		if (!table) {
+			errno = ENOENT;
+			return -1;
+		}
+	}
+
 	switch (cmd->obj) {
 	case CMD_OBJ_TABLE:
 		if (!cmd->handle.table.name)
