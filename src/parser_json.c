@@ -3574,6 +3574,7 @@ static struct cmd *json_parse_cmd_add_object(struct json_ctx *ctx,
 		break;
 	case NFT_OBJECT_CT_TIMEOUT:
 		cmd_obj = CMD_OBJ_CT_TIMEOUT;
+		init_list_head(&obj->ct_timeout.timeout_list);
 		obj->type = NFT_OBJECT_CT_TIMEOUT;
 		if (!json_unpack(root, "{s:s}", "protocol", &tmp)) {
 			if (!strcmp(tmp, "tcp")) {
@@ -3592,7 +3593,6 @@ static struct cmd *json_parse_cmd_add_object(struct json_ctx *ctx,
 		}
 		obj->ct_timeout.l3proto = l3proto;
 
-		init_list_head(&obj->ct_timeout.timeout_list);
 		if (json_parse_ct_timeout_policy(ctx, root, obj))
 			goto err_free_obj;
 		break;
