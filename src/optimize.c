@@ -232,7 +232,7 @@ static bool __stmt_type_eq(const struct stmt *stmt_a, const struct stmt *stmt_b,
 		if (!stmt_a->reject.expr)
 			return true;
 
-		if (__expr_cmp(stmt_a->reject.expr, stmt_b->reject.expr))
+		if (!__expr_cmp(stmt_a->reject.expr, stmt_b->reject.expr))
 			return false;
 		break;
 	case STMT_NAT:
