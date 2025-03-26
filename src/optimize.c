@@ -123,12 +123,41 @@ static bool __expr_cmp(const struct expr *expr_a, const struct expr *expr_b)
 			return false;
 		break;
 	case EXPR_BINOP:
-		return __expr_cmp(expr_a->left, expr_b->left);
+		if (!__expr_cmp(expr_a->left, expr_b->left))
+			return false;
+
+		return __expr_cmp(expr_a->right, expr_b->right);
+	case EXPR_SYMBOL:
+		if (expr_a->symtype != expr_b->symtype)
+			return false;
+		if (expr_a->symtype != SYMBOL_VALUE)
+			return false;
+
+		return !strcmp(expr_a->identifier, expr_b->identifier);
 	default:
 		return false;
 	}
 
 	return true;
+}
+
+static bool is_bitmask(const struct expr *expr)
+{
+	switch (expr->etype) {
+	case EXPR_BINOP:
+		if (expr->op == OP_OR &&
+		    !is_bitmask(expr->left))
+			return false;
+
+		return is_bitmask(expr->right);
+	case EXPR_VALUE:
+	case EXPR_SYMBOL:
+		return true;
+	default:
+		break;
+	}
+
+	return false;
 }
 
 static bool stmt_expr_supported(const struct expr *expr)
@@ -141,6 +170,10 @@ static bool stmt_expr_supported(const struct expr *expr)
 	case EXPR_LIST:
 	case EXPR_VALUE:
 		return true;
+	case EXPR_BINOP:
+		if (is_bitmask(expr->right))
+			return true;
+		break;
 	default:
 		break;
 	}
