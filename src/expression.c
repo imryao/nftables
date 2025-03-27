@@ -503,7 +503,7 @@ struct expr *constant_expr_alloc(const struct location *loc,
 	expr->flags = EXPR_F_CONSTANT | EXPR_F_SINGLETON;
 
 	mpz_init2(expr->value, len);
-	if (data != NULL)
+	if (data != NULL && len)
 		mpz_import_data(expr->value, data, byteorder,
 				div_round_up(len, BITS_PER_BYTE));
 
