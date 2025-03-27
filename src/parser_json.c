@@ -1670,6 +1670,13 @@ static struct expr *json_parse_dtype_expr(struct json_ctx *ctx, json_t *root)
 			}
 			compound_expr_add(expr, i);
 		}
+
+		if (list_empty(&expr->expressions)) {
+			json_error(ctx, "Empty concatenation");
+			expr_free(expr);
+			return NULL;
+		}
+
 		return expr;
 	} else if (json_is_object(root)) {
 		const char *key;
