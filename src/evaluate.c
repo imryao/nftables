@@ -3223,6 +3223,17 @@ static int stmt_evaluate_payload(struct eval_ctx *ctx, struct stmt *stmt)
 	return expr_evaluate(ctx, &stmt->payload.val);
 }
 
+static int stmt_evaluate_stateful(struct eval_ctx *ctx, struct stmt *stmt, const char *name)
+{
+	if (stmt_evaluate(ctx, stmt) < 0)
+		return -1;
+
+	if (!(stmt->flags & STMT_F_STATEFUL))
+		return stmt_error(ctx, stmt, "%s statement must be stateful", name);
+
+	return 0;
+}
+
 static int stmt_evaluate_meter(struct eval_ctx *ctx, struct stmt *stmt)
 {
 	struct expr *key, *set, *setref;
@@ -3252,11 +3263,8 @@ static int stmt_evaluate_meter(struct eval_ctx *ctx, struct stmt *stmt)
 	setref->set->desc.size = stmt->meter.size;
 	stmt->meter.set = setref;
 
-	if (stmt_evaluate(ctx, stmt->meter.stmt) < 0)
+	if (stmt_evaluate_stateful(ctx, stmt->meter.stmt, "meter") < 0)
 		return -1;
-	if (!(stmt->meter.stmt->flags & STMT_F_STATEFUL))
-		return stmt_binary_error(ctx, stmt->meter.stmt, stmt,
-					 "meter statement must be stateful");
 
 	return 0;
 }
@@ -4408,11 +4416,8 @@ static int stmt_evaluate_set(struct eval_ctx *ctx, struct stmt *stmt)
 		return expr_error(ctx->msgs, stmt->set.key,
 				  "Key expression comments are not supported");
 	list_for_each_entry(this, &stmt->set.stmt_list, list) {
-		if (stmt_evaluate(ctx, this) < 0)
+		if (stmt_evaluate_stateful(ctx, this, "set") < 0)
 			return -1;
-		if (!(this->flags & STMT_F_STATEFUL))
-			return stmt_error(ctx, this,
-					  "statement must be stateful");
 	}
 
 	this_set = stmt->set.set->set;
@@ -4472,11 +4477,8 @@ static int stmt_evaluate_map(struct eval_ctx *ctx, struct stmt *stmt)
 				  "Data expression timeouts are not supported");
 
 	list_for_each_entry(this, &stmt->map.stmt_list, list) {
-		if (stmt_evaluate(ctx, this) < 0)
+		if (stmt_evaluate_stateful(ctx, this, "map") < 0)
 			return -1;
-		if (!(this->flags & STMT_F_STATEFUL))
-			return stmt_error(ctx, this,
-					  "statement must be stateful");
 	}
 
 	return 0;
