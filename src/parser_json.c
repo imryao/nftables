@@ -1138,11 +1138,25 @@ static struct expr *json_parse_binop_expr(struct json_ctx *ctx,
 
 	if (json_array_size(root) > 2) {
 		left = json_parse_primary_expr(ctx, json_array_get(root, 0));
+		if (!left) {
+			json_error(ctx, "Failed to parse LHS of binop expression.");
+			return NULL;
+		}
 		right = json_parse_primary_expr(ctx, json_array_get(root, 1));
+		if (!right) {
+			json_error(ctx, "Failed to parse RHS of binop expression.");
+			expr_free(left);
+			return NULL;
+		}
 		left = binop_expr_alloc(int_loc, thisop, left, right);
 		for (i = 2; i < json_array_size(root); i++) {
 			jright = json_array_get(root, i);
 			right = json_parse_primary_expr(ctx, jright);
+			if (!right) {
+				json_error(ctx, "Failed to parse RHS of binop expression.");
+				expr_free(left);
+				return NULL;
+			}
 			left = binop_expr_alloc(int_loc, thisop, left, right);
 		}
 		return left;
