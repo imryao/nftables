@@ -3514,6 +3514,18 @@ static int stmt_evaluate_reject_bridge(struct eval_ctx *ctx, struct stmt *stmt,
 	return 0;
 }
 
+static int stmt_reject_error(struct eval_ctx *ctx,
+			     const struct stmt *stmt,
+			     const char *msg)
+{
+	struct expr *e = stmt->reject.expr;
+
+	if (e)
+		return stmt_binary_error(ctx, e, stmt, "%s", msg);
+
+	return stmt_error(ctx, stmt, "%s", msg);
+}
+
 static int stmt_evaluate_reject_family(struct eval_ctx *ctx, struct stmt *stmt,
 				       struct expr *expr)
 {
@@ -3528,12 +3540,12 @@ static int stmt_evaluate_reject_family(struct eval_ctx *ctx, struct stmt *stmt,
 				return -1;
 			break;
 		case NFT_REJECT_ICMPX_UNREACH:
-			return stmt_binary_error(ctx, stmt->reject.expr, stmt,
+			return stmt_reject_error(ctx, stmt,
 				   "abstracted ICMP unreachable not supported");
 		case NFT_REJECT_ICMP_UNREACH:
 			if (stmt->reject.family == ctx->pctx.family)
 				break;
-			return stmt_binary_error(ctx, stmt->reject.expr, stmt,
+			return stmt_reject_error(ctx, stmt,
 				  "conflicting protocols specified: ip vs ip6");
 		}
 		break;
