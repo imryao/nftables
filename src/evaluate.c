@@ -4899,8 +4899,11 @@ static int set_evaluate(struct eval_ctx *ctx, struct set *set)
 	if (set->timeout)
 		set->flags |= NFT_SET_TIMEOUT;
 
-	list_for_each_entry(stmt, &set->stmt_list, list)
+	list_for_each_entry(stmt, &set->stmt_list, list) {
+		if (stmt_evaluate_stateful(ctx, stmt,type) < 0)
+			return -1;
 		num_stmts++;
+	}
 
 	if (num_stmts > 1)
 		set->flags |= NFT_SET_EXPR;
