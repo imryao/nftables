@@ -664,6 +664,16 @@ static void __merge_concat(const struct optimize_ctx *ctx, uint32_t i,
 				clone = expr_clone(stmt_a->expr->right);
 				compound_expr_add(concat, clone);
 				break;
+			case EXPR_LIST:
+				list_for_each_entry(expr, &stmt_a->expr->right->expressions, list) {
+					concat_clone = expr_clone(concat);
+					clone = expr_clone(expr);
+					compound_expr_add(concat_clone, clone);
+					list_add_tail(&concat_clone->list, &pending_list);
+				}
+				list_del(&concat->list);
+				expr_free(concat);
+				break;
 			default:
 				assert(0);
 				break;
