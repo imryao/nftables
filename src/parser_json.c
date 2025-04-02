@@ -1179,6 +1179,16 @@ static struct expr *json_parse_binop_expr(struct json_ctx *ctx,
 	return binop_expr_alloc(int_loc, thisop, left, right);
 }
 
+static struct expr *json_check_concat_expr(struct json_ctx *ctx, struct expr *e)
+{
+	if (e->size >= 2)
+		return e;
+
+	json_error(ctx, "Concatenation with %d elements is illegal", e->size);
+	expr_free(e);
+	return NULL;
+}
+
 static struct expr *json_parse_concat_expr(struct json_ctx *ctx,
 					   const char *type, json_t *root)
 {
@@ -1212,7 +1222,7 @@ static struct expr *json_parse_concat_expr(struct json_ctx *ctx,
 		}
 		compound_expr_add(expr, tmp);
 	}
-	return expr;
+	return expr ? json_check_concat_expr(ctx, expr) : NULL;
 }
 
 static struct expr *json_parse_prefix_expr(struct json_ctx *ctx,
@@ -1671,13 +1681,7 @@ static struct expr *json_parse_dtype_expr(struct json_ctx *ctx, json_t *root)
 			compound_expr_add(expr, i);
 		}
 
-		if (list_empty(&expr->expressions)) {
-			json_error(ctx, "Empty concatenation");
-			expr_free(expr);
-			return NULL;
-		}
-
-		return expr;
+		return json_check_concat_expr(ctx, expr);
 	} else if (json_is_object(root)) {
 		const char *key;
 		json_t *val;
