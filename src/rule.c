@@ -335,10 +335,13 @@ static void set_print_declaration(const struct set *set,
 		}
 
 		if (set->desc.size > 0) {
-			nft_print(octx, "%s%ssize %u%s",
+			nft_print(octx, "%s%ssize %u",
 				  opts->tab, opts->tab,
-				  set->desc.size,
-				  opts->stmt_separator);
+				  set->desc.size);
+			if (set->count > 0)
+				nft_print(octx, "%s# count %u", opts->tab,
+					  set->count);
+			nft_print(octx, "%s", opts->stmt_separator);
 		}
 	}
 

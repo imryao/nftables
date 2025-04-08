@@ -321,6 +321,7 @@ void rule_stmt_insert_at(struct rule *rule, struct stmt *nstmt,
  * @refcnt:	reference count
  * @flags:	bitmask of set flags
  * @gc_int:	garbage collection interval
+ * @count:	count of kernel-allocated elements
  * @timeout:	default timeout value
  * @key:	key expression (data type, length))
  * @data:	mapping data expression
@@ -345,6 +346,7 @@ struct set {
 	unsigned int		refcnt;
 	uint32_t		flags;
 	uint32_t		gc_int;
+	uint32_t		count;
 	uint64_t		timeout;
 	struct expr		*key;
 	struct expr		*data;
