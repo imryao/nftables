@@ -856,10 +856,13 @@ static const struct datatype *dtype_map_from_kernel(enum nft_data_types type)
 void netlink_dump_set(const struct nftnl_set *nls, struct netlink_ctx *ctx)
 {
 	FILE *fp = ctx->nft->output.output_fp;
+	uint32_t family;
 
 	if (!(ctx->nft->debug_mask & NFT_DEBUG_NETLINK) || !fp)
 		return;
 
+	family = nftnl_set_get_u32(nls, NFTNL_SET_FAMILY);
+	fprintf(fp, "family %d ", family);
 	nftnl_set_fprintf(fp, nls, 0, 0);
 	fprintf(fp, "\n");
 }

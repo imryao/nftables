@@ -1396,9 +1396,15 @@ int mnl_nft_set_del(struct netlink_ctx *ctx, struct cmd *cmd)
 	return 0;
 }
 
+struct set_cb_args {
+	struct netlink_ctx *ctx;
+	struct nftnl_set_list *list;
+};
+
 static int set_cb(const struct nlmsghdr *nlh, void *data)
 {
-	struct nftnl_set_list *nls_list = data;
+	struct set_cb_args *args = data;
+	struct nftnl_set_list *nls_list = args->list;
 	struct nftnl_set *s;
 
 	if (check_genid(nlh) < 0)
@@ -1410,6 +1416,8 @@ static int set_cb(const struct nlmsghdr *nlh, void *data)
 
 	if (nftnl_set_nlmsg_parse(nlh, s) < 0)
 		goto err_free;
+
+	netlink_dump_set(s, args->ctx);
 
 	nftnl_set_list_add_tail(s, nls_list);
 	return MNL_CB_OK;
@@ -1429,6 +1437,7 @@ mnl_nft_set_dump(struct netlink_ctx *ctx, int family,
 	struct nlmsghdr *nlh;
 	struct nftnl_set *s;
 	int ret;
+	struct set_cb_args args;
 
 	s = nftnl_set_alloc();
 	if (s == NULL)
@@ -1450,7 +1459,9 @@ mnl_nft_set_dump(struct netlink_ctx *ctx, int family,
 	if (nls_list == NULL)
 		memory_allocation_error();
 
-	ret = nft_mnl_talk(ctx, nlh, nlh->nlmsg_len, set_cb, nls_list);
+	args.list = nls_list;
+	args.ctx  = ctx;
+	ret = nft_mnl_talk(ctx, nlh, nlh->nlmsg_len, set_cb, &args);
 	if (ret < 0 && errno != ENOENT)
 		goto err;
 
