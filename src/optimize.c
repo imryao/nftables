@@ -134,6 +134,8 @@ static bool __expr_cmp(const struct expr *expr_a, const struct expr *expr_b)
 			return false;
 
 		return !strcmp(expr_a->identifier, expr_b->identifier);
+	case EXPR_VALUE:
+		return !mpz_cmp(expr_a->value, expr_b->value);
 	default:
 		return false;
 	}
@@ -547,6 +549,8 @@ struct merge {
 	/* statements to be merged (index relative to statement matrix) */
 	uint32_t	stmt[MAX_STMTS];
 	uint32_t	num_stmts;
+	/* merge has been invalidated */
+	bool		skip;
 };
 
 static void merge_expr_stmts(const struct optimize_ctx *ctx,
@@ -1376,8 +1380,42 @@ static int chain_optimize(struct nft_ctx *nft, struct list_head *rules)
 		}
 	}
 
-	/* Step 4: Infer how to merge the candidate rules */
+	/* Step 4: Invalidate merge in case of duplicated keys in set/map. */
 	for (k = 0; k < num_merges; k++) {
+		uint32_t r1, r2;
+
+		i = merge[k].rule_from;
+
+		for (r1 = i; r1 < i + merge[k].num_rules; r1++) {
+			for (r2 = r1 + 1; r2 < i + merge[k].num_rules; r2++) {
+				bool match_same_value = true, match_seen = false;
+
+				for (m = 0; m < ctx->num_stmts; m++) {
+					if (!ctx->stmt_matrix[r1][m])
+						continue;
+
+					switch (ctx->stmt_matrix[r1][m]->ops->type) {
+					case STMT_EXPRESSION:
+						match_seen = true;
+						if (!__expr_cmp(ctx->stmt_matrix[r1][m]->expr->right,
+							        ctx->stmt_matrix[r2][m]->expr->right))
+							match_same_value = false;
+						break;
+					default:
+						break;
+					}
+				}
+				if (match_seen && match_same_value)
+					merge[k].skip = true;
+			}
+		}
+	}
+
+	/* Step 5: Infer how to merge the candidate rules */
+	for (k = 0; k < num_merges; k++) {
+		if (merge[k].skip)
+			continue;
+
 		i = merge[k].rule_from;
 
 		for (m = 0; m < ctx->num_stmts; m++) {
