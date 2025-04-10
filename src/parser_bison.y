@@ -798,8 +798,8 @@ int nft_lex(void *, void *, void *);
 
 %type <expr>			symbol_expr verdict_expr integer_expr variable_expr chain_expr policy_expr
 %destructor { expr_free($$); }	symbol_expr verdict_expr integer_expr variable_expr chain_expr policy_expr
-%type <expr>			primary_expr shift_expr and_expr primary_typeof_expr typeof_expr typeof_data_expr typeof_key_expr typeof_verdict_expr
-%destructor { expr_free($$); }	primary_expr shift_expr and_expr primary_typeof_expr typeof_expr typeof_data_expr typeof_key_expr typeof_verdict_expr
+%type <expr>			primary_expr shift_expr and_expr primary_typeof_expr typeof_expr typeof_data_expr typeof_key_expr typeof_verdict_expr selector_expr
+%destructor { expr_free($$); }	primary_expr shift_expr and_expr primary_typeof_expr typeof_expr typeof_data_expr typeof_key_expr typeof_verdict_expr selector_expr
 %type <expr>			exclusive_or_expr inclusive_or_expr
 %destructor { expr_free($$); }	exclusive_or_expr inclusive_or_expr
 %type <expr>			basic_expr
@@ -1952,18 +1952,9 @@ subchain_block		:	/* empty */	{ $$ = $<chain>-1; }
 			}
 			;
 
-typeof_verdict_expr	:	primary_expr
+typeof_verdict_expr	:	selector_expr
 			{
 				struct expr *e = $1;
-
-				if (e->etype == EXPR_SYMBOL &&
-				    strcmp("verdict", e->identifier) == 0) {
-					struct expr *v = verdict_expr_alloc(&@1, NF_ACCEPT, NULL);
-
-					expr_free(e);
-					v->flags &= ~EXPR_F_CONSTANT;
-					e = v;
-				}
 
 				if (expr_ops(e)->build_udata == NULL) {
 					erec_queue(error(&@1, "map data type '%s' lacks typeof serialization", expr_ops(e)->name),
@@ -1973,7 +1964,7 @@ typeof_verdict_expr	:	primary_expr
 				}
 				$$ = e;
 			}
-			|	typeof_expr		DOT		primary_expr
+			|	typeof_expr		DOT		selector_expr
 			{
 				struct location rhs[] = {
 					[1]	= @2,
@@ -1997,9 +1988,24 @@ typeof_data_expr	:	INTERVAL	typeof_expr
 			{
 				$$ = constant_expr_alloc(&@$, &queue_type, BYTEORDER_HOST_ENDIAN, 16, NULL);
 			}
+			|	STRING
+			{
+				struct expr *verdict;
+
+				if (strcmp("verdict", $1) != 0) {
+					erec_queue(error(&@1, "map data type '%s' lacks typeof serialization", $1),
+						   state->msgs);
+					xfree($1);
+					YYERROR;
+				}
+				verdict = verdict_expr_alloc(&@1, NF_ACCEPT, NULL);
+				verdict->flags &= ~EXPR_F_CONSTANT;
+				$$ = verdict;
+				xfree($1);
+			}
 			;
 
-primary_typeof_expr	:	primary_expr
+primary_typeof_expr	:	selector_expr
 			{
 				if (expr_ops($1)->build_udata == NULL) {
 					erec_queue(error(&@1, "primary expression type '%s' lacks typeof serialization", expr_ops($1)->name),
@@ -4248,9 +4254,7 @@ integer_expr		:	NUM
 			}
 			;
 
-primary_expr		:	symbol_expr			{ $$ = $1; }
-			|	integer_expr			{ $$ = $1; }
-			|	payload_expr			{ $$ = $1; }
+selector_expr		:	payload_expr			{ $$ = $1; }
 			|	exthdr_expr			{ $$ = $1; }
 			|	exthdr_exists_expr		{ $$ = $1; }
 			|	meta_expr			{ $$ = $1; }
@@ -4262,6 +4266,11 @@ primary_expr		:	symbol_expr			{ $$ = $1; }
 			|	fib_expr			{ $$ = $1; }
 			|	osf_expr			{ $$ = $1; }
 			|	xfrm_expr			{ $$ = $1; }
+			;
+
+primary_expr		:	symbol_expr			{ $$ = $1; }
+			|	integer_expr			{ $$ = $1; }
+			|	selector_expr			{ $$ = $1; }
 			|	'('	basic_expr	')'	{ $$ = $2; }
 			;
 
