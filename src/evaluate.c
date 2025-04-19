@@ -3080,6 +3080,40 @@ static bool stmt_evaluate_payload_need_csum(const struct expr *payload)
 	return desc && desc->checksum_key;
 }
 
+static bool stmt_evaluate_is_vlan(const struct expr *payload)
+{
+	return payload->payload.base == PROTO_BASE_LL_HDR &&
+	       payload->payload.desc == &proto_vlan;
+}
+
+/** stmt_evaluate_payload_need_aligned_fetch
+ *
+ * @payload:	payload expression to check
+ *
+ * Some types of stores need to round up to an even sized byte length,
+ * typically 1 -> 2 or 3 -> 4 bytes.
+ *
+ * This includes anything that needs inet checksum fixups and also writes
+ * to the vlan header.  This is because of VLAN header removal in the
+ * kernel: nftables kernel side provides illusion of a linear packet, i.e.
+ * ethernet_header|vlan_header|network_header.
+ *
+ * When a write to the vlan header is performed, kernel side updates the
+ * pseudoheader, but only accepts 2 or 4 byte writes to vlan proto/TCI.
+ *
+ * Return true if load needs to be expanded to cover even amount of bytes
+ */
+static bool stmt_evaluate_payload_need_aligned_fetch(const struct expr *payload)
+{
+	if (stmt_evaluate_payload_need_csum(payload))
+		return true;
+
+	if (stmt_evaluate_is_vlan(payload))
+		return true;
+
+	return false;
+}
+
 static int stmt_evaluate_exthdr(struct eval_ctx *ctx, struct stmt *stmt)
 {
 	struct expr *exthdr;
@@ -3109,7 +3143,7 @@ static int stmt_evaluate_payload(struct eval_ctx *ctx, struct stmt *stmt)
 	uint8_t shift_imm, data[NFT_REG_SIZE];
 	struct expr *payload;
 	mpz_t bitmask, ff;
-	bool need_csum;
+	bool aligned_fetch;
 
 	if (__expr_evaluate_payload(ctx, stmt->payload.expr) < 0)
 		return -1;
@@ -3127,7 +3161,7 @@ static int stmt_evaluate_payload(struct eval_ctx *ctx, struct stmt *stmt)
 	if (stmt->payload.val->etype == EXPR_RANGE)
 		return stmt_error_range(ctx, stmt, stmt->payload.val);
 
-	need_csum = stmt_evaluate_payload_need_csum(payload);
+	aligned_fetch = stmt_evaluate_payload_need_aligned_fetch(payload);
 
 	if (!payload_needs_adjustment(payload)) {
 
@@ -3135,7 +3169,7 @@ static int stmt_evaluate_payload(struct eval_ctx *ctx, struct stmt *stmt)
 		 * update checksum and the length is not even because
 		 * kernel checksum functions cannot deal with odd lengths.
 		 */
-		if (!need_csum || ((payload->len / BITS_PER_BYTE) & 1) == 0)
+		if (!aligned_fetch || ((payload->len / BITS_PER_BYTE) & 1) == 0)
 			return 0;
 	}
 
@@ -3151,7 +3185,7 @@ static int stmt_evaluate_payload(struct eval_ctx *ctx, struct stmt *stmt)
 				  "uneven load cannot span more than %u bytes, got %u",
 				  sizeof(data), payload_byte_size);
 
-	if (need_csum && payload_byte_size & 1) {
+	if (aligned_fetch && payload_byte_size & 1) {
 		payload_byte_size++;
 
 		if (payload_byte_offset & 1) { /* prefer 16bit aligned fetch */
