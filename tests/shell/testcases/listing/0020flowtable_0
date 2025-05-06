@@ -48,7 +48,13 @@ EXPECTED3="table ip filter {
 iface_cleanup() {
 	ip link del d0 &>/dev/null || :
 }
-trap 'iface_cleanup' EXIT
+ft_cleanup() {
+	if [ "$NFT_TEST_HAVE_ifname_based_hooks" = y ]; then
+		$NFT 'delete flowtable ip filter f2 { devices = { d0 }; }'
+		$NFT 'delete flowtable inet filter f2 { devices = { d0 }; }'
+	fi
+}
+trap 'iface_cleanup; ft_cleanup' EXIT
 iface_cleanup
 
 ip link add d0 type dummy
