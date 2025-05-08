@@ -4,6 +4,12 @@
 
 set -e
 
+read taint < /proc/sys/kernel/tainted
+if [ "$taint" -ne 0 ]; then
+	echo "Kernel already tainted up front."
+	exit 77
+fi
+
 iface_cleanup() {
         ip link del d0 &>/dev/null || :
 }
@@ -26,10 +32,6 @@ EOF
 }
 
 for i in $(seq 1 500);do
-	read taint < /proc/sys/kernel/tainted
-	if [ "$taint" -ne 0 ]; then
-		exit 1
-	fi
 	ip link add dummy0 type dummy
 	load_rules
 
@@ -37,12 +39,11 @@ for i in $(seq 1 500);do
 	$NFT flush ruleset &
 	ip link del dummy0 &
 	wait
+
+	read taint < /proc/sys/kernel/tainted
+	if [ "$taint" -ne 0 ]; then
+		exit 1
+	fi
 done
-
-read taint < /proc/sys/kernel/tainted
-
-if [ "$taint" -ne 0 ]; then
-	exit 1
-fi
 
 exit 0
