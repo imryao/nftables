@@ -939,7 +939,15 @@ json_t *fib_expr_json(const struct expr *expr, struct output_ctx *octx)
 		}
 		if (flags)
 			json_array_append_new(tmp, json_integer(flags));
-		json_object_set_new(root, "flags", tmp);
+
+		if (json_array_size(tmp) > 1) {
+			json_object_set_new(root, "flags", tmp);
+		} else {
+			if (json_array_size(tmp))
+				json_object_set(root, "flags",
+						json_array_get(tmp, 0));
+			json_decref(tmp);
+		}
 	}
 	return json_pack("{s:o}", "fib", root);
 }
