@@ -1686,10 +1686,14 @@ json_t *synproxy_stmt_json(const struct stmt *stmt, struct output_ctx *octx)
 	if (stmt->synproxy.flags & NF_SYNPROXY_OPT_SACK_PERM)
 		json_array_append_new(flags, json_string("sack-perm"));
 
-	if (json_array_size(flags) > 0)
+	if (json_array_size(flags) > 1) {
 		json_object_set_new(root, "flags", flags);
-	else
+	} else {
+		if (json_array_size(flags))
+			json_object_set(root, "flags",
+					json_array_get(flags, 0));
 		json_decref(flags);
+	}
 
 	if (!json_object_size(root)) {
 		json_decref(root);
