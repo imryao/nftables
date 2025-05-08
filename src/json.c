@@ -51,6 +51,18 @@ static int json_array_extend_new(json_t *array, json_t *other_array)
 	return ret;
 }
 
+static void json_add_array_new(json_t *obj, const char *name, json_t *array)
+{
+	if (json_array_size(array) > 1) {
+		json_object_set_new(obj, name, array);
+	} else {
+		if (json_array_size(array))
+			json_object_set(obj, name,
+					json_array_get(array, 0));
+		json_decref(array);
+	}
+}
+
 static json_t *expr_print_json(const struct expr *expr, struct output_ctx *octx)
 {
 	const struct expr_ops *ops;
@@ -198,14 +210,7 @@ static json_t *set_print_json(struct output_ctx *octx, const struct set *set)
 		json_array_append_new(tmp, json_pack("s", "timeout"));
 	if (set->flags & NFT_SET_EVAL)
 		json_array_append_new(tmp, json_pack("s", "dynamic"));
-
-	if (json_array_size(tmp) > 1) {
-		json_object_set_new(root, "flags", tmp);
-	} else {
-		if (json_array_size(tmp))
-			json_object_set(root, "flags", json_array_get(tmp, 0));
-		json_decref(tmp);
-	}
+	json_add_array_new(root, "flags", tmp);
 
 	if (set->timeout) {
 		tmp = json_integer(set->timeout / 1000);
@@ -449,19 +454,16 @@ static json_t *obj_print_json(const struct obj *obj)
 		json_decref(tmp);
 		break;
 	case NFT_OBJECT_SYNPROXY:
-		flags = json_array();
 		tmp = json_pack("{s:i, s:i}",
 				"mss", obj->synproxy.mss,
 				"wscale", obj->synproxy.wscale);
+
+		flags = json_array();
 		if (obj->synproxy.flags & NF_SYNPROXY_OPT_TIMESTAMP)
 			json_array_append_new(flags, json_string("timestamp"));
 		if (obj->synproxy.flags & NF_SYNPROXY_OPT_SACK_PERM)
 			json_array_append_new(flags, json_string("sack-perm"));
-
-		if (json_array_size(flags) > 0)
-			json_object_set_new(tmp, "flags", flags);
-		else
-			json_decref(flags);
+		json_add_array_new(tmp, "flags", flags);
 
 		json_object_update(root, tmp);
 		json_decref(tmp);
@@ -515,31 +517,18 @@ static json_t *table_flags_json(const struct table *table)
 		flags >>= 1;
 		i++;
 	}
-	switch (json_array_size(root)) {
-	case 0:
-		json_decref(root);
-		return NULL;
-	case 1:
-		json_unpack(root, "[O]", &tmp);
-		json_decref(root);
-		root = tmp;
-		break;
-	}
 	return root;
 }
 
 static json_t *table_print_json(const struct table *table)
 {
-	json_t *root, *tmp;
+	json_t *root;
 
 	root = json_pack("{s:s, s:s, s:I}",
 			 "family", family2str(table->handle.family),
 			 "name", table->handle.table.name,
 			 "handle", table->handle.handle.id);
-
-	tmp = table_flags_json(table);
-	if (tmp)
-		json_object_set_new(root, "flags", tmp);
+	json_add_array_new(root, "flags", table_flags_json(table));
 
 	if (table->comment)
 		json_object_set_new(root, "comment", json_string(table->comment));
@@ -940,14 +929,7 @@ json_t *fib_expr_json(const struct expr *expr, struct output_ctx *octx)
 		if (flags)
 			json_array_append_new(tmp, json_integer(flags));
 
-		if (json_array_size(tmp) > 1) {
-			json_object_set_new(root, "flags", tmp);
-		} else {
-			if (json_array_size(tmp))
-				json_object_set(root, "flags",
-						json_array_get(tmp, 0));
-			json_decref(tmp);
-		}
+		json_add_array_new(root, "flags", tmp);
 	}
 	return json_pack("{s:o}", "fib", root);
 }
@@ -1384,14 +1366,7 @@ json_t *log_stmt_json(const struct stmt *stmt, struct output_ctx *octx)
 		if (stmt->log.logflags & NF_LOG_MACDECODE)
 			json_array_append_new(flags, json_string("ether"));
 	}
-	if (json_array_size(flags) > 1) {
-		json_object_set_new(root, "flags", flags);
-	} else {
-		if (json_array_size(flags))
-			json_object_set(root, "flags",
-					json_array_get(flags, 0));
-		json_decref(flags);
-	}
+	json_add_array_new(root, "flags", flags);
 
 	if (!json_object_size(root)) {
 		json_decref(root);
@@ -1426,18 +1401,6 @@ static json_t *nat_type_flags_json(uint32_t type_flags)
 	return array;
 }
 
-static void nat_stmt_add_array(json_t *root, const char *name, json_t *array)
-{
-	if (json_array_size(array) > 1) {
-		json_object_set_new(root, name, array);
-	} else {
-		if (json_array_size(array))
-			json_object_set(root, name,
-					json_array_get(array, 0));
-		json_decref(array);
-	}
-}
-
 json_t *nat_stmt_json(const struct stmt *stmt, struct output_ctx *octx)
 {
 	json_t *root = json_object();
@@ -1459,12 +1422,12 @@ json_t *nat_stmt_json(const struct stmt *stmt, struct output_ctx *octx)
 		json_object_set_new(root, "port",
 				    expr_print_json(stmt->nat.proto, octx));
 
-	nat_stmt_add_array(root, "flags", array);
+	json_add_array_new(root, "flags", array);
 
 	if (stmt->nat.type_flags) {
 		array = nat_type_flags_json(stmt->nat.type_flags);
 
-		nat_stmt_add_array(root, "type_flags", array);
+		json_add_array_new(root, "type_flags", array);
 	}
 
 	if (!json_object_size(root)) {
@@ -1616,14 +1579,7 @@ json_t *queue_stmt_json(const struct stmt *stmt, struct output_ctx *octx)
 		json_array_append_new(flags, json_string("bypass"));
 	if (stmt->queue.flags & NFT_QUEUE_FLAG_CPU_FANOUT)
 		json_array_append_new(flags, json_string("fanout"));
-	if (json_array_size(flags) > 1) {
-		json_object_set_new(root, "flags", flags);
-	} else {
-		if (json_array_size(flags))
-			json_object_set(root, "flags",
-					json_array_get(flags, 0));
-		json_decref(flags);
-	}
+	json_add_array_new(root, "flags", flags);
 
 	if (!json_object_size(root)) {
 		json_decref(root);
@@ -1686,14 +1642,7 @@ json_t *synproxy_stmt_json(const struct stmt *stmt, struct output_ctx *octx)
 	if (stmt->synproxy.flags & NF_SYNPROXY_OPT_SACK_PERM)
 		json_array_append_new(flags, json_string("sack-perm"));
 
-	if (json_array_size(flags) > 1) {
-		json_object_set_new(root, "flags", flags);
-	} else {
-		if (json_array_size(flags))
-			json_object_set(root, "flags",
-					json_array_get(flags, 0));
-		json_decref(flags);
-	}
+	json_add_array_new(root, "flags", flags);
 
 	if (!json_object_size(root)) {
 		json_decref(root);
