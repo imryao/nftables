@@ -871,12 +871,11 @@ static int obj_cache_cb(struct nftnl_obj *nlo, void *arg)
 		return 0;
 
 	obj = netlink_delinearize_obj(ctx->nlctx, nlo);
-	if (!obj)
-		return -1;
-
-	obj_name = nftnl_obj_get_str(nlo, NFTNL_OBJ_NAME);
-	hash = djb_hash(obj_name) % NFT_CACHE_HSIZE;
-	cache_add(&obj->cache, &ctx->table->obj_cache, hash);
+	if (obj) {
+		obj_name = nftnl_obj_get_str(nlo, NFTNL_OBJ_NAME);
+		hash = djb_hash(obj_name) % NFT_CACHE_HSIZE;
+		cache_add(&obj->cache, &ctx->table->obj_cache, hash);
+	}
 
 	nftnl_obj_list_del(nlo);
 	nftnl_obj_free(nlo);
