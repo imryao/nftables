@@ -605,7 +605,8 @@ static void netlink_parse_bitwise(struct netlink_parse_ctx *ctx,
 						   sreg, left);
 		break;
 	default:
-		BUG("invalid bitwise operation %u\n", op);
+		return netlink_error(ctx, loc,
+				     "Invalid bitwise operation %u", op);
 	}
 
 	dreg = netlink_parse_register(nle, NFTNL_EXPR_BITWISE_DREG);
@@ -616,6 +617,7 @@ static void netlink_parse_byteorder(struct netlink_parse_ctx *ctx,
 				    const struct location *loc,
 				    const struct nftnl_expr *nle)
 {
+	uint32_t opval = nftnl_expr_get_u32(nle, NFTNL_EXPR_BYTEORDER_OP);
 	enum nft_registers sreg, dreg;
 	struct expr *expr, *arg;
 	enum ops op;
@@ -627,7 +629,7 @@ static void netlink_parse_byteorder(struct netlink_parse_ctx *ctx,
 				     "Byteorder expression has no left "
 				     "hand side");
 
-	switch (nftnl_expr_get_u32(nle, NFTNL_EXPR_BYTEORDER_OP)) {
+	switch (opval) {
 	case NFT_BYTEORDER_NTOH:
 		op = OP_NTOH;
 		break;
@@ -635,8 +637,9 @@ static void netlink_parse_byteorder(struct netlink_parse_ctx *ctx,
 		op = OP_HTON;
 		break;
 	default:
-		BUG("invalid byteorder operation %u\n",
-		    nftnl_expr_get_u32(nle, NFTNL_EXPR_BYTEORDER_OP));
+		expr_free(arg);
+		return netlink_error(ctx, loc,
+				     "Invalid byteorder operation %u", opval);
 	}
 
 	expr = unary_expr_alloc(loc, op, arg);
@@ -733,8 +736,10 @@ static void netlink_parse_inner(struct netlink_parse_ctx *ctx,
 		expr->meta.inner_desc = inner_desc;
 		break;
 	default:
-		assert(0);
-		break;
+		netlink_error(ctx, loc, "Unsupported inner expression type %s",
+			      expr_ops(expr)->name);
+		expr_free(expr);
+		return;
 	}
 
 	netlink_set_register(ctx, ctx->inner_reg, expr);
