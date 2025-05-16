@@ -1412,12 +1412,13 @@ static void set_elem_parse_udata(struct nftnl_set_elem *nlse,
 	}
 }
 
-int netlink_delinearize_setelem(struct nftnl_set_elem *nlse,
-				struct set *set, struct nft_cache *cache)
+int netlink_delinearize_setelem(struct netlink_ctx *ctx,
+				struct nftnl_set_elem *nlse,
+				struct set *set)
 {
 	struct setelem_parse_ctx setelem_parse_ctx = {
 		.set	= set,
-		.cache	= cache,
+		.cache	= &ctx->nft->cache,
 	};
 	struct nft_data_delinearize nld;
 	struct expr *expr, *key, *data;
@@ -1475,7 +1476,7 @@ key_end:
 		struct stmt *stmt;
 
 		nle = nftnl_set_elem_get(nlse, NFTNL_SET_ELEM_EXPR, NULL);
-		stmt = netlink_parse_set_expr(set, cache, nle);
+		stmt = netlink_parse_set_expr(set, &ctx->nft->cache, nle);
 		list_add_tail(&stmt->list, &setelem_parse_ctx.stmt_list);
 	} else if (nftnl_set_elem_is_set(nlse, NFTNL_SET_ELEM_EXPRESSIONS)) {
 		nftnl_set_elem_expr_foreach(nlse, set_elem_parse_expressions,
@@ -1552,7 +1553,7 @@ out:
 static int list_setelem_cb(struct nftnl_set_elem *nlse, void *arg)
 {
 	struct netlink_ctx *ctx = arg;
-	return netlink_delinearize_setelem(nlse, ctx->set, &ctx->nft->cache);
+	return netlink_delinearize_setelem(ctx, nlse, ctx->set);
 }
 
 static int list_setelem_debug_cb(struct nftnl_set_elem *nlse, void *arg)
