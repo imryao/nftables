@@ -17,18 +17,22 @@ trap 'iface_cleanup' EXIT
 
 load_rules()
 {
-$NFT -f - <<EOF
-add table netdev nm-mlag-dummy0
+	if [ "$NFT_TEST_HAVE_netdev_egress" != n ]; then
+		EGRESS="add chain netdev nm-mlag-dummy0 tx-snoop-source-mac { type filter hook egress devices = { dummy0 } priority filter; policy accept; }
+add rule netdev nm-mlag-dummy0 tx-snoop-source-mac update @macset-tagged { ether saddr . vlan id timeout 5s } return
+add rule netdev nm-mlag-dummy0 tx-snoop-source-mac update @macset-untagged { ether saddr timeout 5s }"
+	fi
+
+RULESET="add table netdev nm-mlag-dummy0
 add set netdev nm-mlag-dummy0 macset-tagged { typeof ether saddr . vlan id; size 65535; flags dynamic,timeout; }
 add set netdev nm-mlag-dummy0 macset-untagged { typeof ether saddr; size 65535; flags dynamic,timeout; }
-add chain netdev nm-mlag-dummy0 tx-snoop-source-mac { type filter hook egress devices = { dummy0 } priority filter; policy accept; }
-add rule netdev nm-mlag-dummy0 tx-snoop-source-mac update @macset-tagged { ether saddr . vlan id timeout 5s } return
-add rule netdev nm-mlag-dummy0 tx-snoop-source-mac update @macset-untagged { ether saddr timeout 5s }
+$EGRESS
 add chain netdev nm-mlag-dummy0 rx-drop-looped-packets { type filter hook ingress devices = { dummy0 } priority filter; policy accept; }
 add rule netdev nm-mlag-dummy0 rx-drop-looped-packets ether saddr . vlan id @macset-tagged drop
 add rule netdev nm-mlag-dummy0 rx-drop-looped-packets ether type 8021q return
-add rule netdev nm-mlag-dummy0 rx-drop-looped-packets ether saddr @macset-untagged drop
-EOF
+add rule netdev nm-mlag-dummy0 rx-drop-looped-packets ether saddr @macset-untagged drop"
+
+	$NFT -f - <<< $RULESET
 }
 
 for i in $(seq 1 500);do
