@@ -7,6 +7,7 @@
 #   recognized in input (checked against standard syntax input/output)
 
 # NFT_TEST_REQUIRES(NFT_TEST_HAVE_json)
+# NFT_TEST_REQUIRES(NFT_TEST_HAVE_table_flag_persist)
 
 set -e
 
