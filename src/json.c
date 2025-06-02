@@ -284,8 +284,14 @@ static json_t *chain_print_json(const struct chain *chain)
 	if (chain->flags & CHAIN_F_BASECHAIN) {
 		mpz_export_data(&priority, chain->priority.expr->value,
 				BYTEORDER_HOST_ENDIAN, sizeof(int));
-		mpz_export_data(&policy, chain->policy->value,
-				BYTEORDER_HOST_ENDIAN, sizeof(int));
+
+		if (chain->policy) {
+			mpz_export_data(&policy, chain->policy->value,
+					BYTEORDER_HOST_ENDIAN, sizeof(int));
+		} else {
+			policy = NF_ACCEPT;
+		}
+
 		tmp = json_pack("{s:s, s:s, s:i, s:s}",
 				"type", chain->type.str,
 				"hook", hooknum2str(chain->handle.family,
@@ -463,10 +469,13 @@ static json_t *obj_print_json(const struct obj *obj)
 static json_t *flowtable_print_json(const struct flowtable *ftable)
 {
 	json_t *root, *devs = NULL;
-	int i, priority;
+	int i, priority = 0;
 
-	mpz_export_data(&priority, ftable->priority.expr->value,
-			BYTEORDER_HOST_ENDIAN, sizeof(int));
+	if (ftable->priority.expr) {
+		mpz_export_data(&priority, ftable->priority.expr->value,
+				BYTEORDER_HOST_ENDIAN, sizeof(int));
+	}
+
 	root = json_pack("{s:s, s:s, s:s, s:I, s:s, s:i}",
 			"family", family2str(ftable->handle.family),
 			"name", ftable->handle.flowtable.name,
