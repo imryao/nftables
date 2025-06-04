@@ -397,7 +397,8 @@ CHAINS
 Chains are containers for rules. They exist in two kinds, base chains and
 regular chains. A base chain is an entry point for packets from the networking
 stack, a regular chain may be used as jump target and is used for better rule
-organization.
+organization. Regular chains can be anonymous, see *VERDICT STATEMENT* examples
+for details.
 
 [horizontal]
 *add*:: Add a new chain in the specified table. When a hook and priority value
