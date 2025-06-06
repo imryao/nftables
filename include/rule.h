@@ -756,6 +756,10 @@ extern void cmd_free(struct cmd *cmd);
 #include <payload.h>
 #include <expression.h>
 
+struct eval_recursion {
+	uint16_t binop;
+};
+
 /**
  * struct eval_ctx - evaluation context
  *
@@ -767,7 +771,7 @@ extern void cmd_free(struct cmd *cmd);
  * @set:	current set
  * @stmt:	current statement
  * @stmt_len:	current statement template length
- * @recursion:  expr evaluation recursion counter
+ * @recursion:  expr evaluation recursion counters
  * @cache:	cache context
  * @debug_mask: debugging bitmask
  * @ectx:	expression context
@@ -783,7 +787,7 @@ struct eval_ctx {
 	struct set		*set;
 	struct stmt		*stmt;
 	uint32_t		stmt_len;
-	uint32_t		recursion;
+	struct eval_recursion	recursion;
 	struct expr_ctx		ectx;
 	struct proto_ctx	_pctx[2];
 	const struct proto_desc	*inner_desc;
