@@ -758,6 +758,7 @@ extern void cmd_free(struct cmd *cmd);
 
 struct eval_recursion {
 	uint16_t binop;
+	uint16_t list;
 };
 
 /**
