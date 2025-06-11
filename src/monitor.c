@@ -577,13 +577,17 @@ static int netlink_events_flowtable_cb(const struct nlmsghdr *nlh, int type,
 		nft_mon_print(monh, "%s ", cmd);
 
 		switch (type) {
+		case NFT_MSG_DELFLOWTABLE:
+			if (!ft->dev_array_len) {
+				nft_mon_print(monh, "flowtable %s %s %s",
+					      family,
+					      ft->handle.table.name,
+					      ft->handle.flowtable.name);
+				break;
+			}
+			/* fall through */
 		case NFT_MSG_NEWFLOWTABLE:
 			flowtable_print_plain(ft, &monh->ctx->nft->output);
-			break;
-		case NFT_MSG_DELFLOWTABLE:
-			nft_mon_print(monh, "flowtable %s %s %s", family,
-				      ft->handle.table.name,
-				      ft->handle.flowtable.name);
 			break;
 		}
 		nft_mon_print(monh, "\n");
