@@ -1862,14 +1862,16 @@ netlink_delinearize_flowtable(struct netlink_ctx *ctx,
 		      sizeof(char *), qsort_device_cmp);
 	}
 
-	priority = nftnl_flowtable_get_u32(nlo, NFTNL_FLOWTABLE_PRIO);
-	flowtable->priority.expr =
+	if (nftnl_flowtable_is_set(nlo, NFTNL_FLOWTABLE_PRIO)) {
+		priority = nftnl_flowtable_get_u32(nlo, NFTNL_FLOWTABLE_PRIO);
+		flowtable->priority.expr =
 				constant_expr_alloc(&netlink_location,
 						    &integer_type,
 						    BYTEORDER_HOST_ENDIAN,
 						    sizeof(int) *
 						    BITS_PER_BYTE,
 						    &priority);
+	}
 	flowtable->hook.num =
 		nftnl_flowtable_get_u32(nlo, NFTNL_FLOWTABLE_HOOKNUM);
 	flowtable->flags =
