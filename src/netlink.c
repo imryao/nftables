@@ -1727,9 +1727,10 @@ struct obj *netlink_delinearize_obj(struct netlink_ctx *ctx,
 		init_list_head(&obj->ct_timeout.timeout_list);
 		obj->ct_timeout.l3proto = nftnl_obj_get_u16(nlo, NFTNL_OBJ_CT_TIMEOUT_L3PROTO);
 		obj->ct_timeout.l4proto = nftnl_obj_get_u8(nlo, NFTNL_OBJ_CT_TIMEOUT_L4PROTO);
-		memcpy(obj->ct_timeout.timeout,
-		       nftnl_obj_get(nlo, NFTNL_OBJ_CT_TIMEOUT_ARRAY),
-		       NFTNL_CTTIMEOUT_ARRAY_MAX * sizeof(uint32_t));
+		if (nftnl_obj_is_set(nlo, NFTNL_OBJ_CT_TIMEOUT_ARRAY))
+			memcpy(obj->ct_timeout.timeout,
+			       nftnl_obj_get(nlo, NFTNL_OBJ_CT_TIMEOUT_ARRAY),
+			       NFTNL_CTTIMEOUT_ARRAY_MAX * sizeof(uint32_t));
 		break;
 	case NFT_OBJECT_LIMIT:
 		obj->limit.rate =
