@@ -482,7 +482,8 @@ static int expr_evaluate_value(struct eval_ctx *ctx, struct expr **expr)
 			return -1;
 		break;
 	default:
-		BUG("invalid basetype %s\n", expr_basetype(*expr)->name);
+		return expr_error(ctx->msgs, *expr, "Unexpected datatype %s",
+				  (*expr)->dtype->name);
 	}
 	return 0;
 }
