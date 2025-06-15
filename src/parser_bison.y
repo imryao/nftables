@@ -1757,11 +1757,11 @@ reset_cmd		:	COUNTERS	list_cmd_spec_any
 			{
 				$$ = cmd_alloc(CMD_RESET, CMD_OBJ_ELEMENTS, &$2, &@$, $3);
 			}
-			|	SET		set_or_id_spec
+			|	SET		set_spec
 			{
 				$$ = cmd_alloc(CMD_RESET, CMD_OBJ_SET, &$2, &@$, NULL);
 			}
-			|	MAP		set_or_id_spec
+			|	MAP		set_spec
 			{
 				$$ = cmd_alloc(CMD_RESET, CMD_OBJ_MAP, &$2, &@$, NULL);
 			}
