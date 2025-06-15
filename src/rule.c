@@ -211,6 +211,9 @@ struct set *set_lookup_fuzzy(const char *set_name,
 	struct table *table;
 	struct set *set;
 
+	if (!set_name)
+		return NULL;
+
 	string_misspell_init(&st);
 
 	list_for_each_entry(table, &cache->table_cache.list, cache.list) {
@@ -1221,6 +1224,9 @@ struct table *table_lookup_fuzzy(const struct handle *h,
 	struct string_misspell_state st;
 	struct table *table;
 
+	if (!h->table.name)
+		return NULL;
+
 	string_misspell_init(&st);
 
 	list_for_each_entry(table, &cache->table_cache.list, cache.list) {
@@ -1702,6 +1708,9 @@ struct obj *obj_lookup_fuzzy(const char *obj_name,
 	struct string_misspell_state st;
 	struct table *table;
 	struct obj *obj;
+
+	if (!obj_name)
+		return NULL;
 
 	string_misspell_init(&st);
 
@@ -2197,6 +2206,9 @@ struct flowtable *flowtable_lookup_fuzzy(const char *ft_name,
 	struct string_misspell_state st;
 	struct table *table;
 	struct flowtable *ft;
+
+	if (!ft_name)
+		return NULL;
 
 	string_misspell_init(&st);
 
