@@ -551,8 +551,7 @@ struct table *table_cache_find(const struct cache *cache,
 	struct table *table;
 	uint32_t hash;
 
-	if (!name)
-		return NULL;
+	assert(name);
 
 	hash = djb_hash(name) % NFT_CACHE_HSIZE;
 	list_for_each_entry(table, &cache->ht[hash], cache.hlist) {
@@ -671,6 +670,8 @@ struct chain *chain_cache_find(const struct table *table, const char *name)
 {
 	struct chain *chain;
 	uint32_t hash;
+
+	assert(name);
 
 	hash = djb_hash(name) % NFT_CACHE_HSIZE;
 	list_for_each_entry(chain, &table->chain_cache.ht[hash], cache.hlist) {
@@ -840,6 +841,8 @@ struct set *set_cache_find(const struct table *table, const char *name)
 	struct set *set;
 	uint32_t hash;
 
+	assert(name);
+
 	hash = djb_hash(name) % NFT_CACHE_HSIZE;
 	list_for_each_entry(set, &table->set_cache.ht[hash], cache.hlist) {
 		if (!strcmp(set->handle.set.name, name))
@@ -954,6 +957,8 @@ struct obj *obj_cache_find(const struct table *table, const char *name,
 	struct obj *obj;
 	uint32_t hash;
 
+	assert(name);
+
 	hash = djb_hash(name) % NFT_CACHE_HSIZE;
 	list_for_each_entry(obj, &table->obj_cache.ht[hash], cache.hlist) {
 		if (!strcmp(obj->handle.obj.name, name) &&
@@ -1057,6 +1062,8 @@ struct flowtable *ft_cache_find(const struct table *table, const char *name)
 {
 	struct flowtable *ft;
 	uint32_t hash;
+
+	assert(name);
 
 	hash = djb_hash(name) % NFT_CACHE_HSIZE;
 	list_for_each_entry(ft, &table->ft_cache.ht[hash], cache.hlist) {
