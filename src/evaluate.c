@@ -2328,6 +2328,7 @@ static bool data_mapping_has_interval(struct expr *data)
 	struct expr *i;
 
 	if (data->etype == EXPR_RANGE ||
+	    data->etype == EXPR_RANGE_VALUE ||
 	    data->etype == EXPR_PREFIX)
 		return true;
 
@@ -2336,6 +2337,7 @@ static bool data_mapping_has_interval(struct expr *data)
 
 	list_for_each_entry(i, &data->expressions, list) {
 		if (i->etype == EXPR_RANGE ||
+		    i->etype == EXPR_RANGE_VALUE ||
 		    i->etype == EXPR_PREFIX)
 			return true;
 	}
@@ -2428,8 +2430,7 @@ static int expr_evaluate_symbol_range(struct eval_ctx *ctx, struct expr **exprp)
 	left = range->left;
 	right = range->right;
 
-	/* maps need more work to use constant_range_expr. */
-	if (ctx->set && !set_is_map(ctx->set->flags) &&
+	if (ctx->set &&
 	    left->etype == EXPR_VALUE &&
 	    right->etype == EXPR_VALUE) {
 		constant_range = constant_range_expr_alloc(&expr->location,

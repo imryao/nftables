@@ -216,6 +216,7 @@ struct nftnl_set_elem *alloc_nftnl_setelem(const struct expr *set,
 			/* fallthrough */
 		case EXPR_VALUE:
 		case EXPR_RANGE:
+		case EXPR_RANGE_VALUE:
 		case EXPR_PREFIX:
 			nftnl_set_elem_set(nlse, NFTNL_SET_ELEM_DATA,
 					   nld.value, nld.len);
@@ -369,29 +370,46 @@ static void netlink_gen_concat_key(const struct expr *expr,
 static int __netlink_gen_concat_data(int end, const struct expr *i,
 				     unsigned char *data)
 {
+	mpz_t value;
+	int ret;
+
 	switch (i->etype) {
 	case EXPR_RANGE:
-		i = end ? i->right : i->left;
+		if (end)
+			i = i->right;
+		else
+			i = i->left;
+
+		mpz_init_set(value, i->value);
+		break;
+	case EXPR_RANGE_VALUE:
+		if (end)
+			mpz_init_set(value, i->range.high);
+		else
+			mpz_init_set(value, i->range.low);
 		break;
 	case EXPR_PREFIX:
 		if (end) {
 			int count;
-			mpz_t v;
 
-			mpz_init_bitmask(v, i->len - i->prefix_len);
-			mpz_add(v, i->prefix->value, v);
-			count = netlink_export_pad(data, v, i);
-			mpz_clear(v);
+			mpz_init_bitmask(value, i->len - i->prefix_len);
+			mpz_add(value, i->prefix->value, value);
+			count = netlink_export_pad(data, value, i);
+			mpz_clear(value);
 			return count;
 		}
 		return netlink_export_pad(data, i->prefix->value, i);
 	case EXPR_VALUE:
+		mpz_init_set(value, i->value);
 		break;
 	default:
 		BUG("invalid expression type '%s' in set", expr_ops(i)->name);
 	}
 
-	return netlink_export_pad(data, i->value, i);
+	ret = netlink_export_pad(data, value, i);
+	mpz_clear(value);
+
+	return ret;
 }
 
 static void __netlink_gen_concat_expand(const struct expr *expr,
@@ -507,6 +525,22 @@ static void netlink_gen_range(const struct expr *expr,
 	nft_data_memcpy(nld, data, len);
 }
 
+static void netlink_gen_range_value(const struct expr *expr,
+				    struct nft_data_linearize *nld)
+{
+	unsigned int len = (netlink_padded_len(expr->len) / BITS_PER_BYTE) * 2;
+	unsigned char data[NFT_MAX_EXPR_LEN_BYTES];
+	unsigned int offset;
+
+	if (len > sizeof(data))
+		BUG("Value export of %u bytes would overflow", len);
+
+	memset(data, 0, sizeof(data));
+	offset = netlink_export_pad(data, expr->range.low, expr);
+	netlink_export_pad(data + offset, expr->range.high, expr);
+	nft_data_memcpy(nld, data, len);
+}
+
 static void netlink_gen_prefix(const struct expr *expr,
 			       struct nft_data_linearize *nld)
 {
@@ -556,6 +590,8 @@ static void __netlink_gen_data(const struct expr *expr,
 		return netlink_gen_verdict(expr, data);
 	case EXPR_RANGE:
 		return netlink_gen_range(expr, data);
+	case EXPR_RANGE_VALUE:
+		return netlink_gen_range_value(expr, data);
 	case EXPR_PREFIX:
 		return netlink_gen_prefix(expr, data);
 	default:
