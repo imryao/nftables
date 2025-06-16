@@ -612,7 +612,7 @@ struct expr *constant_range_expr_alloc(const struct location *loc,
 	struct expr *expr;
 
 	expr = expr_alloc(loc, EXPR_RANGE_VALUE, dtype, byteorder, len);
-	expr->flags = EXPR_F_CONSTANT | EXPR_F_SINGLETON;
+	expr->flags = EXPR_F_CONSTANT;
 
 	mpz_init_set(expr->range.low, low);
 	mpz_init_set(expr->range.high, high);
