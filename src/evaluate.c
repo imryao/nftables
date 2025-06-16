@@ -1740,6 +1740,7 @@ static int expr_evaluate_concat(struct eval_ctx *ctx, struct expr **expr)
 			break;
 		case EXPR_RANGE:
 		case EXPR_PREFIX:
+		case EXPR_RANGE_VALUE:
 			/* allowed on RHS (e.g. th dport . mark { 1-65535 . 42 }
 			 *                                       ~~~~~~~~ allowed
 			 * but not on LHS (e.g  1-4 . mark { ...}
@@ -1763,7 +1764,6 @@ static int expr_evaluate_concat(struct eval_ctx *ctx, struct expr **expr)
 		case EXPR_SET_REF:
 		case EXPR_MAPPING:
 		case EXPR_SET_ELEM_CATCHALL:
-		case EXPR_RANGE_VALUE:
 		case EXPR_RANGE_SYMBOL:
 			return expr_error(ctx->msgs, i,
 					  "cannot use %s in concatenation",
@@ -1939,6 +1939,7 @@ static int expr_evaluate_set_elem(struct eval_ctx *ctx, struct expr **expr)
 		switch (elem->key->etype) {
 		case EXPR_PREFIX:
 		case EXPR_RANGE:
+		case EXPR_RANGE_VALUE:
 			key = elem->key;
 			goto err_missing_flag;
 		case EXPR_CONCAT:
@@ -1946,6 +1947,7 @@ static int expr_evaluate_set_elem(struct eval_ctx *ctx, struct expr **expr)
 				switch (key->etype) {
 				case EXPR_PREFIX:
 				case EXPR_RANGE:
+				case EXPR_RANGE_VALUE:
 					goto err_missing_flag;
 				default:
 					break;
@@ -2426,9 +2428,8 @@ static int expr_evaluate_symbol_range(struct eval_ctx *ctx, struct expr **exprp)
 	left = range->left;
 	right = range->right;
 
-	/* concatenation and maps need more work to use constant_range_expr. */
+	/* maps need more work to use constant_range_expr. */
 	if (ctx->set && !set_is_map(ctx->set->flags) &&
-	    set_is_non_concat_range(ctx->set) &&
 	    left->etype == EXPR_VALUE &&
 	    right->etype == EXPR_VALUE) {
 		constant_range = constant_range_expr_alloc(&expr->location,

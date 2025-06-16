@@ -286,6 +286,17 @@ static int __netlink_gen_concat_key(uint32_t flags, const struct expr *i,
 
 		i = expr;
 		break;
+	case EXPR_RANGE_VALUE:
+		if (flags & EXPR_F_INTERVAL_END)
+			mpz_init_set(value, i->range.high);
+		else
+			mpz_init_set(value, i->range.low);
+
+		if (expr_basetype(i)->type == TYPE_INTEGER &&
+		    i->byteorder == BYTEORDER_HOST_ENDIAN)
+			byteorder_switch_expr_value(value, i);
+
+		break;
 	case EXPR_PREFIX:
 		if (flags & EXPR_F_INTERVAL_END) {
 			int count;
