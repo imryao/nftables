@@ -43,6 +43,7 @@ INFILE="$WORKDIR/infile"
 OUTFILE="$WORKDIR/outfile"
 PCAP="$WORKDIR/tcpdump.pcap"
 
+umask 022
 mkdir -p $WORKDIR
 assert_pass "mkdir $WORKDIR"
 
