@@ -36,6 +36,7 @@ TESTDIR="$(dirname "$TEST")"
 START_TIME="$(cut -d ' ' -f1 /proc/uptime)"
 
 export TMPDIR="$NFT_TEST_TESTTMPDIR"
+export NFT_TEST_LIBRARY_FILE="$NFT_TEST_BASEDIR/helpers/lib.sh"
 
 CLEANUP_UMOUNT_VAR_RUN=n
 

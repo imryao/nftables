@@ -3,6 +3,8 @@
 # NFT_TEST_REQUIRES(NFT_TEST_HAVE_socat)
 # NFT_TEST_SKIP(NFT_TEST_SKIP_slow)
 
+. $NFT_TEST_LIBRARY_FILE
+
 rnd=$(mktemp -u XXXXXXXX)
 R="flowtable-router-$rnd"
 C="flowtable-client-$rnd"
@@ -17,29 +19,10 @@ cleanup()
 }
 trap cleanup EXIT
 
-assert_pass()
+# Call back when assertion fails.
+assert_failout()
 {
-	local ret=$?
-	if [ $ret != 0 ]
-	then
-		echo "FAIL: ${@}"
-		ip netns exec $R cat /proc/net/nf_conntrack
-		exit 1
-	else
-		echo "PASS: ${@}"
-	fi
-}
-assert_fail()
-{
-	local ret=$?
-	if [ $ret == 0 ]
-	then
-		echo "FAIL: ${@}"
-		ip netns exec $R cat /proc/net/nf_conntrack
-		exit 1
-	else
-		echo "PASS: ${@}"
-	fi
+	ip netns exec $R cat /proc/net/nf_conntrack
 }
 
 ip netns add $R

@@ -4,6 +4,8 @@
 # NFT_TEST_REQUIRES(NFT_TEST_HAVE_curl)
 # NFT_TEST_REQUIRES(NFT_TEST_HAVE_vsftpd)
 
+. $NFT_TEST_LIBRARY_FILE
+
 cleanup()
 {
 	for i in $R $C $S;do
@@ -14,22 +16,14 @@ cleanup()
 }
 trap cleanup EXIT
 
-assert_pass()
+assert_failout()
 {
-	local ret=$?
-	if [ $ret != 0 ]
-	then
-		echo "FAIL: ${@}"
-		ip netns exec $R $NFT list ruleset
-		tcpdump -nnr ${PCAP}
-		test -r /proc/net/nf_conntrack && ip netns exec $R cat /proc/net/nf_conntrack
-		ip netns exec $R conntrack -S
-		ip netns exec $R conntrack -L
-		ip netns exec $S ss -nitepal
-		exit 1
-	else
-		echo "PASS: ${@}"
-	fi
+	ip netns exec $R $NFT list ruleset
+	tcpdump -nnr ${PCAP}
+	test -r /proc/net/nf_conntrack && ip netns exec $R cat /proc/net/nf_conntrack
+	ip netns exec $R conntrack -S
+	ip netns exec $R conntrack -L
+	ip netns exec $S ss -nitepal
 }
 
 rnd=$(mktemp -u XXXXXXXX)
