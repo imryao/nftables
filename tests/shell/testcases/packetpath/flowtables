@@ -83,7 +83,8 @@ assert_pass "set net.netfilter.nf_conntrack_tcp_timeout_established=86400"
 
 # A trick to control the timing to send a packet
 ip netns exec $S socat TCP6-LISTEN:10001 GOPEN:/tmp/socat-$rnd,ignoreeof &
-sleep 1
+wait_local_port_listen $S 10001 tcp
+
 ip netns exec $C socat -b 2048 PIPE:/tmp/pipefile-$rnd 'TCP:[2001:db8:ffff:22::1]:10001' &
 sleep 1
 ip netns exec $C echo "send sth" >> /tmp/pipefile-$rnd        ; assert_pass "send a packet"

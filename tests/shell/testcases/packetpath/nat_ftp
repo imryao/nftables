@@ -133,7 +133,8 @@ pam_service_name=vsftpd
 background=YES
 EOF
 ip netns exec $S vsftpd ${FTPCONF}
-sleep 1
+wait_local_port_listen $S 21 tcp
+
 ip netns exec $S ss -6ltnp | grep -q '*:21'
 assert_pass "start vsftpd server"
 
@@ -142,7 +143,7 @@ assert_pass "start vsftpd server"
 reload_ruleset
 ip netns exec $S tcpdump -q --immediate-mode -Ui s_r -w ${PCAP} 2> /dev/null &
 pid=$!
-sleep 1
+sleep 0.5
 ip netns exec $C curl --no-progress-meter --connect-timeout 5 ftp://[${ip_rc}]:2121/$(basename $INFILE) -o $OUTFILE
 assert_pass "curl ftp passive mode "
 
@@ -159,6 +160,7 @@ reload_ruleset
 
 ip netns exec $S tcpdump -q --immediate-mode -Ui s_r -w ${PCAP} 2> /dev/null &
 pid=$!
+sleep 0.5
 ip netns exec $C curl --no-progress-meter -P - --connect-timeout 5 ftp://[${ip_rc}]:2121/$(basename $INFILE) -o $OUTFILE
 assert_pass "curl ftp active mode "
 
