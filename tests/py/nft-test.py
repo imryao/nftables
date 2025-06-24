@@ -722,7 +722,7 @@ def payload_check(payload_buffer, file, cmd):
              continue
 
         line = file.readline()
-        while line.find("[") < 0 or line.find("]") < 0:
+        while line.find("[") < 0 or line.find("]") < 0 or (line.startswith("family ") and line.find(" [nf_tables]") > 0):
             line = file.readline()
             if line == "":
                 break
