@@ -17,3 +17,5 @@ fib daddr check missing;ok
 fib daddr oif exists;ok;fib daddr check exists
 
 fib daddr check vmap { missing : drop, exists : accept };ok
+
+meta mark set fib daddr check . ct mark map { exists . 0x00000000 : 0x00000001 };ok

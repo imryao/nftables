@@ -3873,6 +3873,7 @@ primary_stmt_expr	:	symbol_expr			{ $$ = $1; }
 			|	payload_expr			{ $$ = $1; }
 			|	keyword_expr			{ $$ = $1; }
 			|	socket_expr			{ $$ = $1; }
+			|	fib_expr			{ $$ = $1; }
 			|	osf_expr			{ $$ = $1; }
 			|	'('	basic_stmt_expr	')'	{ $$ = $2; }
 			;

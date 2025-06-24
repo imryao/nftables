@@ -159,3 +159,48 @@
         }
     }
 ]
+
+# meta mark set fib daddr check . ct mark map { exists . 0x00000000 : 0x00000001 }
+[
+    {
+        "mangle": {
+            "key": {
+                "meta": {
+                    "key": "mark"
+                }
+            },
+            "value": {
+                "map": {
+                    "data": {
+                        "set": [
+                            [
+                                {
+                                    "concat": [
+                                        true,
+                                        0
+                                    ]
+                                },
+                                1
+                            ]
+                        ]
+                    },
+                    "key": {
+                        "concat": [
+                            {
+                                "fib": {
+                                    "flags": "daddr",
+                                    "result": "check"
+                                }
+                            },
+                            {
+                                "ct": {
+                                    "key": "mark"
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    }
+]
