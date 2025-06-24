@@ -938,7 +938,7 @@ json_t *fib_expr_json(const struct expr *expr, struct output_ctx *octx)
 	unsigned int flags = expr->fib.flags & ~NFTA_FIB_F_PRESENT;
 	json_t *root;
 
-	root = nft_json_pack("{s:s}", "result", fib_result_str(expr->fib.result));
+	root = nft_json_pack("{s:s}", "result", fib_result_str(expr));
 
 	if (flags) {
 		json_t *tmp = json_array();

@@ -103,7 +103,7 @@
                     "flags": [
                         "daddr"
                     ],
-                    "result": "oif"
+                    "result": "check"
                 }
             },
 	    "op": "==",
@@ -112,7 +112,7 @@
     }
 ]
 
-# fib daddr oif missing
+# fib daddr check missing
 [
     {
         "match": {
@@ -121,7 +121,7 @@
                     "flags": [
                         "daddr"
                     ],
-                    "result": "oif"
+                    "result": "check"
                 }
             },
 	    "op": "==",
@@ -130,3 +130,32 @@
     }
 ]
 
+# fib daddr check vmap { missing : drop, exists : accept }
+[
+    {
+        "vmap": {
+            "data": {
+                "set": [
+                    [
+                        false,
+                        {
+                            "drop": null
+                        }
+                    ],
+                    [
+                        true,
+                        {
+                            "accept": null
+                        }
+                    ]
+                ]
+            },
+            "key": {
+                "fib": {
+                    "flags": "daddr",
+                    "result": "check"
+                }
+            }
+        }
+    }
+]

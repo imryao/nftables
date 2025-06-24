@@ -1157,6 +1157,7 @@ static struct expr *json_parse_fib_expr(struct json_ctx *ctx,
 		[NFT_FIB_RESULT_OIF] = "oif",
 		[NFT_FIB_RESULT_OIFNAME] = "oifname",
 		[NFT_FIB_RESULT_ADDRTYPE] = "type",
+		[__NFT_FIB_RESULT_MAX] = "check",	/* Actually, NFT_FIB_F_PRESENT. */
 	};
 	enum nft_fib_result resultval = NFT_FIB_RESULT_UNSPEC;
 	const char *result;
@@ -1172,12 +1173,19 @@ static struct expr *json_parse_fib_expr(struct json_ctx *ctx,
 			break;
 		}
 	}
-	if (resultval == NFT_FIB_RESULT_UNSPEC) {
+	switch (resultval) {
+	case NFT_FIB_RESULT_UNSPEC:
 		json_error(ctx, "Invalid fib result '%s'.", result);
 		return NULL;
+	case __NFT_FIB_RESULT_MAX:
+		resultval = NFT_FIB_RESULT_OIF;
+		flagval = NFTA_FIB_F_PRESENT;
+		break;
+	default:
+		break;
 	}
 
-	flagval = parse_flags_array(ctx, root, "flags", fib_flag_parse);
+	flagval |= parse_flags_array(ctx, root, "flags", fib_flag_parse);
 	if (flagval < 0)
 		return NULL;
 

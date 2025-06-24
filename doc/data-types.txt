@@ -166,7 +166,7 @@ Check TCP option header existence.
 .Boolean specification
 ----------------------
 # match if route exists
-filter input fib daddr . iif oif exists
+filter input fib daddr . iif check exists
 
 # match only non-fragmented packets in IPv6 traffic
 filter input exthdr frag missing

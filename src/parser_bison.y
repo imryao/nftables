@@ -284,6 +284,7 @@ int nft_lex(void *, void *, void *);
 %token UNDEFINE			"undefine"
 
 %token FIB			"fib"
+%token CHECK			"check"
 
 %token SOCKET			"socket"
 %token TRANSPARENT		"transparent"
@@ -4360,30 +4361,38 @@ primary_expr		:	symbol_expr			{ $$ = $1; }
 
 fib_expr		:	FIB	fib_tuple	fib_result	close_scope_fib
 			{
-				if (($2 & (NFTA_FIB_F_SADDR|NFTA_FIB_F_DADDR)) == 0) {
+				uint32_t flags = $2, result = $3;
+
+				if (result == __NFT_FIB_RESULT_MAX) {
+					result = NFT_FIB_RESULT_OIF;
+					flags |= NFTA_FIB_F_PRESENT;
+				}
+
+				if ((flags & (NFTA_FIB_F_SADDR|NFTA_FIB_F_DADDR)) == 0) {
 					erec_queue(error(&@2, "fib: need either saddr or daddr"), state->msgs);
 					YYERROR;
 				}
 
-				if (($2 & (NFTA_FIB_F_SADDR|NFTA_FIB_F_DADDR)) ==
-					  (NFTA_FIB_F_SADDR|NFTA_FIB_F_DADDR)) {
+				if ((flags & (NFTA_FIB_F_SADDR|NFTA_FIB_F_DADDR)) ==
+					     (NFTA_FIB_F_SADDR|NFTA_FIB_F_DADDR)) {
 					erec_queue(error(&@2, "fib: saddr and daddr are mutually exclusive"), state->msgs);
 					YYERROR;
 				}
 
-				if (($2 & (NFTA_FIB_F_IIF|NFTA_FIB_F_OIF)) ==
-					  (NFTA_FIB_F_IIF|NFTA_FIB_F_OIF)) {
+				if ((flags & (NFTA_FIB_F_IIF|NFTA_FIB_F_OIF)) ==
+					     (NFTA_FIB_F_IIF|NFTA_FIB_F_OIF)) {
 					erec_queue(error(&@2, "fib: iif and oif are mutually exclusive"), state->msgs);
 					YYERROR;
 				}
 
-				$$ = fib_expr_alloc(&@$, $2, $3);
+				$$ = fib_expr_alloc(&@$, flags, result);
 			}
 			;
 
 fib_result		:	OIF	{ $$ =NFT_FIB_RESULT_OIF; }
 			|	OIFNAME { $$ =NFT_FIB_RESULT_OIFNAME; }
 			|	TYPE	close_scope_type	{ $$ =NFT_FIB_RESULT_ADDRTYPE; }
+			|	CHECK	{ $$ = __NFT_FIB_RESULT_MAX; }	/* actually, NFT_FIB_F_PRESENT. */
 			;
 
 fib_flag		:       SADDR	{ $$ = NFTA_FIB_F_SADDR; }

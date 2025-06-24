@@ -44,7 +44,7 @@
             "left": {
                 "fib": {
                     "flags": "daddr",
-                    "result": "oif"
+                    "result": "check"
                 }
             },
             "op": "==",
@@ -53,14 +53,14 @@
     }
 ]
 
-# fib daddr oif missing
+# fib daddr check missing
 [
     {
         "match": {
             "left": {
                 "fib": {
                     "flags": "daddr",
-                    "result": "oif"
+                    "result": "check"
                 }
             },
             "op": "==",
