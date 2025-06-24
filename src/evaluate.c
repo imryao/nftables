@@ -137,7 +137,7 @@ static struct expr *implicit_set_declaration(struct eval_ctx *ctx,
 	handle_merge(&set->handle, &ctx->cmd->handle);
 
 	if (set_evaluate(ctx, set) < 0) {
-		if (set->flags & NFT_SET_MAP)
+		if (set->flags & (NFT_SET_MAP|NFT_SET_OBJECT))
 			set->init = NULL;
 		set_free(set);
 		return NULL;
