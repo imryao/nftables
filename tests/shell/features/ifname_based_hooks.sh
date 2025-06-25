@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# check if netdev chains survive without a single device
+# check if adding a netdev-family chain hooking into a non-existent device is
+# accepted or not
 
-unshare -n bash -c "ip link add d0 type dummy; \
-	$NFT \"table netdev t { \
-		chain c { \
-			type filter hook ingress priority 0; devices = { d0 }; \
-		}; \
-	}\"; \
-	ip link del d0; \
-	$NFT list chain netdev t c"
+RULESET="table netdev t {
+	chain c {
+		type filter hook ingress priority 0
+		devices = { foobar123 }
+	}
+}"
+unshare -n $NFT -f - <<< "$RULESET"
