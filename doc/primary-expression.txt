@@ -117,7 +117,7 @@ devgroup
 outgoing device group|
 devgroup
 |cgroup|
-control group id |
+control group net_cls.classid (for matching on cgroupv2, see *socket cgroupv2*)|
 integer (32 bit)
 |random|
 pseudo-random number|
