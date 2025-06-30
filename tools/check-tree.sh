@@ -111,7 +111,7 @@ fi
 ##############################################################################
 #
 F=( $(find tests/shell/testcases/ -type f | grep '^tests/shell/testcases/[^/]\+/dumps/[^/]\+\.\(json-nft\|nft\|nodump\)$' -v | sort) )
-IGNORED_FILES=( tests/shell/testcases/bogons/nft-f/* )
+IGNORED_FILES=( tests/shell/testcases/bogons/nft-f/* tests/shell/testcases/bogons/nft-j-f/* )
 for f in "${F[@]}" ; do
 	if ! array_contains "$f" "${SHELL_TESTS[@]}" "${IGNORED_FILES[@]}" ; then
 		msg_err "Unexpected file \"$f\""
