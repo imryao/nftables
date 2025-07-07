@@ -237,6 +237,114 @@ next:
 	}
 }
 
+static struct expr *trace_alloc_list(const struct datatype *dtype,
+				     enum byteorder byteorder,
+				     unsigned int len, const void *data)
+{
+	struct expr *list_expr;
+	unsigned int i;
+	mpz_t value;
+	uint32_t v;
+
+	if (len != sizeof(v))
+		return constant_expr_alloc(&netlink_location,
+					   dtype, byteorder,
+					   len * BITS_PER_BYTE, data);
+
+	list_expr = list_expr_alloc(&netlink_location);
+
+	mpz_init2(value, 32);
+	mpz_import_data(value, data, byteorder, len);
+	v = mpz_get_uint32(value);
+	if (v == 0) {
+		mpz_clear(value);
+		return NULL;
+	}
+
+	for (i = 0; i < 32; i++) {
+		uint32_t bitv = v & (1 << i);
+
+		if (bitv == 0)
+			continue;
+
+		compound_expr_add(list_expr,
+				  constant_expr_alloc(&netlink_location,
+						      dtype, byteorder,
+						      len * BITS_PER_BYTE,
+						      &bitv));
+	}
+
+	mpz_clear(value);
+	return list_expr;
+}
+
+static void trace_print_ct_expr(const struct nftnl_trace *nlt, unsigned int attr,
+				enum nft_ct_keys key, struct output_ctx *octx)
+{
+	struct expr *lhs, *rhs, *rel;
+	const void *data;
+	uint32_t len;
+
+	data = nftnl_trace_get_data(nlt, attr, &len);
+	lhs = ct_expr_alloc(&netlink_location, key, -1);
+
+	switch (key) {
+	case NFT_CT_STATUS:
+		rhs = trace_alloc_list(lhs->dtype, lhs->byteorder, len, data);
+		if (!rhs) {
+			expr_free(lhs);
+			return;
+		}
+		rel  = binop_expr_alloc(&netlink_location, OP_IMPLICIT, lhs, rhs);
+		break;
+	case NFT_CT_DIRECTION:
+	case NFT_CT_STATE:
+	case NFT_CT_ID:
+		/* fallthrough */
+	default:
+		rhs  = constant_expr_alloc(&netlink_location,
+					   lhs->dtype, lhs->byteorder,
+					   len * BITS_PER_BYTE, data);
+		rel  = relational_expr_alloc(&netlink_location, OP_IMPLICIT, lhs, rhs);
+		break;
+	}
+
+	expr_print(rel, octx);
+	nft_print(octx, " ");
+	expr_free(rel);
+}
+
+static void trace_print_ct(const struct nftnl_trace *nlt,
+			   struct output_ctx *octx)
+{
+	bool ct = nftnl_trace_is_set(nlt, NFTNL_TRACE_CT_STATE);
+
+	if (!ct)
+		return;
+
+	trace_print_hdr(nlt, octx);
+
+	nft_print(octx, "conntrack: ");
+
+	if (nftnl_trace_is_set(nlt, NFTNL_TRACE_CT_DIRECTION))
+		trace_print_ct_expr(nlt, NFTNL_TRACE_CT_DIRECTION,
+				    NFT_CT_DIRECTION, octx);
+
+	if (nftnl_trace_is_set(nlt, NFTNL_TRACE_CT_STATE))
+		trace_print_ct_expr(nlt, NFTNL_TRACE_CT_STATE,
+				    NFT_CT_STATE, octx);
+
+	if (nftnl_trace_is_set(nlt, NFTNL_TRACE_CT_STATUS))
+		trace_print_ct_expr(nlt, NFTNL_TRACE_CT_STATUS,
+				    NFT_CT_STATUS, octx);
+
+	if (nftnl_trace_is_set(nlt, NFTNL_TRACE_CT_ID))
+		trace_print_ct_expr(nlt, NFTNL_TRACE_CT_ID,
+				    NFT_CT_ID, octx);
+
+	nft_print(octx, "\n");
+}
+
 static void trace_print_packet(const struct nftnl_trace *nlt,
 			        struct output_ctx *octx)
 {
@@ -248,6 +356,7 @@ static void trace_print_packet(const struct nftnl_trace *nlt,
 	uint32_t nfproto;
 	struct stmt *stmt, *next;
 
+	trace_print_ct(nlt, octx);
 	trace_print_hdr(nlt, octx);
 
 	nft_print(octx, "packet: ");
