@@ -227,11 +227,6 @@ struct ruleset_parse {
 	struct cmd              *cmd;
 };
 
-struct nftnl_parse_ctx;
-
-int netlink_events_trace_cb(const struct nlmsghdr *nlh, int type,
-			    struct netlink_mon_handler *monh);
-
 enum nft_data_types dtype_map_to_kernel(const struct datatype *dtype);
 
 void netlink_linearize_init(struct netlink_linearize_ctx *lctx,

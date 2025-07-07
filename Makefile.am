@@ -220,6 +220,7 @@ src_libnftables_la_SOURCES = \
 	src/misspell.c \
 	src/mnl.c \
 	src/monitor.c \
+	src/trace.c \
 	src/netlink.c \
 	src/netlink_delinearize.c \
 	src/netlink_linearize.c \

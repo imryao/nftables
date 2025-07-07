@@ -16,7 +16,6 @@
 #include <inttypes.h>
 
 #include <libnftnl/table.h>
-#include <libnftnl/trace.h>
 #include <libnftnl/chain.h>
 #include <libnftnl/expr.h>
 #include <libnftnl/object.h>
@@ -32,6 +31,7 @@
 #include <nftables.h>
 #include <netlink.h>
 #include <mnl.h>
+#include <trace.h>
 #include <expression.h>
 #include <statement.h>
 #include <gmputil.h>
