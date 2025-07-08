@@ -5393,9 +5393,54 @@ static bool evaluate_expr_variable(struct eval_ctx *ctx, struct expr **exprp)
 	return true;
 }
 
-static bool evaluate_device_expr(struct eval_ctx *ctx, struct expr **dev_expr)
+static struct expr *expr_set_to_list(struct eval_ctx *ctx, struct expr *dev_expr)
 {
 	struct expr *expr, *next, *key;
+	struct location loc;
+	LIST_HEAD(tmp);
+
+	list_for_each_entry_safe(expr, next, &dev_expr->expressions, list) {
+		list_del(&expr->list);
+
+		switch (expr->etype) {
+		case EXPR_VARIABLE:
+			expr_set_context(&ctx->ectx, &ifname_type,
+					 IFNAMSIZ * BITS_PER_BYTE);
+			if (!evaluate_expr_variable(ctx, &expr))
+				return false;
+
+			if (expr->etype == EXPR_SET) {
+				expr = expr_set_to_list(ctx, expr);
+				list_splice_init(&expr->expressions, &tmp);
+				expr_free(expr);
+				continue;
+			}
+			break;
+		case EXPR_SET_ELEM:
+			key = expr_clone(expr->key);
+			expr_free(expr);
+			expr = key;
+			break;
+		case EXPR_VALUE:
+			break;
+		default:
+			break;
+		}
+
+		list_add(&expr->list, &tmp);
+	}
+
+	loc = dev_expr->location;
+	expr_free(dev_expr);
+	dev_expr = compound_expr_alloc(&loc, EXPR_LIST);
+	list_splice_init(&tmp, &dev_expr->expressions);
+
+	return dev_expr;
+}
+
+static bool evaluate_device_expr(struct eval_ctx *ctx, struct expr **dev_expr)
+{
+	struct expr *expr, *next;
 	LIST_HEAD(tmp);
 
 	if ((*dev_expr)->etype == EXPR_VARIABLE) {
@@ -5405,9 +5450,10 @@ static bool evaluate_device_expr(struct eval_ctx *ctx, struct expr **dev_expr)
 			return false;
 	}
 
-	if ((*dev_expr)->etype != EXPR_SET &&
-	    (*dev_expr)->etype != EXPR_LIST)
-		return true;
+	if ((*dev_expr)->etype == EXPR_SET)
+		*dev_expr = expr_set_to_list(ctx, *dev_expr);
+
+	assert((*dev_expr)->etype == EXPR_LIST);
 
 	list_for_each_entry_safe(expr, next, &(*dev_expr)->expressions, list) {
 		list_del(&expr->list);
@@ -5418,11 +5464,13 @@ static bool evaluate_device_expr(struct eval_ctx *ctx, struct expr **dev_expr)
 					 IFNAMSIZ * BITS_PER_BYTE);
 			if (!evaluate_expr_variable(ctx, &expr))
 				return false;
-			break;
-		case EXPR_SET_ELEM:
-			key = expr_clone(expr->key);
-			expr_free(expr);
-			expr = key;
+
+			if (expr->etype == EXPR_SET) {
+				expr = expr_set_to_list(ctx, expr);
+				list_splice_init(&expr->expressions, &tmp);
+				expr_free(expr);
+				continue;
+			}
 			break;
 		case EXPR_VALUE:
 			break;

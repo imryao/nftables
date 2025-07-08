@@ -757,7 +757,6 @@ static struct nft_dev *nft_dev_array(const struct expr *dev_expr, int *num_devs)
 	struct expr *expr;
 
 	switch (dev_expr->etype) {
-	case EXPR_SET:
 	case EXPR_LIST:
 		list_for_each_entry(expr, &dev_expr->expressions, list)
 			len++;
