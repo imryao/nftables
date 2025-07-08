@@ -2211,8 +2211,6 @@ static int expr_evaluate_map(struct eval_ctx *ctx, struct expr **expr)
 	mappings = map->mappings;
 
 	switch (map->mappings->etype) {
-	case EXPR_CONCAT:
-	case EXPR_LIST:
 	case EXPR_SET:
 		set_flags |= mappings->set_flags;
 		/* fallthrough */
