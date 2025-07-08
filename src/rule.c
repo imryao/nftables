@@ -424,7 +424,7 @@ static void do_set_print(const struct set *set, struct print_fmt_options *opts,
 		return;
 	}
 
-	if (set->init != NULL && set->init->size > 0) {
+	if (set->init != NULL && expr_set(set->init)->size > 0) {
 		nft_print(octx, "%s%selements = ", opts->tab, opts->tab);
 
 		if (set->timeout || set->elem_has_comment ||
@@ -1459,7 +1459,7 @@ void cmd_free(struct cmd *cmd)
 static int __do_add_elements(struct netlink_ctx *ctx, struct cmd *cmd,
 			     struct set *set, struct expr *expr, uint32_t flags)
 {
-	expr->set_flags |= set->flags;
+	expr_set(expr)->set_flags |= set->flags;
 	if (mnl_nft_setelem_add(ctx, cmd, set, expr, flags) < 0)
 		return -1;
 

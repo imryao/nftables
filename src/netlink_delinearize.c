@@ -2186,10 +2186,10 @@ static void payload_match_postprocess(struct rule_pp_ctx *ctx,
 
 			if (set_is_anonymous(set->flags) &&
 			    set->init &&
-			    !list_empty(&set->init->expressions)) {
+			    !list_empty(&expr_set(set->init)->expressions)) {
 				struct expr *elem;
 
-				elem = list_first_entry(&set->init->expressions, struct expr, list);
+				elem = list_first_entry(&expr_set(set->init)->expressions, struct expr, list);
 
 				if (elem->etype == EXPR_SET_ELEM &&
 				    elem->key->etype == EXPR_VALUE)
@@ -2476,7 +2476,7 @@ static void binop_adjust(const struct expr *binop, struct expr *right,
 		if (!set_is_anonymous(right->set->flags))
 			break;
 
-		list_for_each_entry(i, &right->set->init->expressions, list) {
+		list_for_each_entry(i, &expr_set(right->set->init)->expressions, list) {
 			switch (i->key->etype) {
 			case EXPR_VALUE:
 				binop_adjust_one(binop, i->key, shift);
@@ -2822,7 +2822,7 @@ static void expr_postprocess_concat(struct rule_pp_ctx *ctx, struct expr **exprp
 	assert(expr->etype == EXPR_CONCAT);
 
 	ctx->flags |= RULE_PP_IN_CONCATENATION;
-	list_for_each_entry_safe(i, n, &expr->expressions, list) {
+	list_for_each_entry_safe(i, n, &expr_concat(expr)->expressions, list) {
 		if (type) {
 			dtype = concat_subtype_lookup(type, --off);
 			expr_set_type(i, dtype, dtype->byteorder);
@@ -2834,7 +2834,7 @@ static void expr_postprocess_concat(struct rule_pp_ctx *ctx, struct expr **exprp
 		ntype = concat_subtype_add(ntype, i->dtype->type);
 	}
 	ctx->flags &= ~RULE_PP_IN_CONCATENATION;
-	list_splice(&tmp, &expr->expressions);
+	list_splice(&tmp, &expr_concat(expr)->expressions);
 	__datatype_set(expr, concat_type_alloc(ntype));
 }
 
@@ -2861,7 +2861,7 @@ static void expr_postprocess(struct rule_pp_ctx *ctx, struct expr **exprp)
 		expr_postprocess(ctx, &expr->right);
 		break;
 	case EXPR_SET:
-		list_for_each_entry(i, &expr->expressions, list)
+		list_for_each_entry(i, &expr_set(expr)->expressions, list)
 			expr_postprocess(ctx, &i);
 		break;
 	case EXPR_CONCAT:
@@ -3432,7 +3432,7 @@ static bool has_inner_desc(const struct expr *expr)
 	case EXPR_BINOP:
 		return has_inner_desc(expr->left);
 	case EXPR_CONCAT:
-		list_for_each_entry(i, &expr->expressions, list) {
+		list_for_each_entry(i, &expr_concat(expr)->expressions, list) {
 			if (has_inner_desc(i))
 				return true;
 		}

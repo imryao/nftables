@@ -132,8 +132,8 @@ struct nftnl_set_elem *alloc_nftnl_setelem(const struct expr *set,
 	case EXPR_SET_ELEM_CATCHALL:
 		break;
 	default:
-		if (set->set_flags & NFT_SET_INTERVAL &&
-		    key->etype == EXPR_CONCAT && key->field_count > 1) {
+		if (expr_set(set)->set_flags & NFT_SET_INTERVAL &&
+		    key->etype == EXPR_CONCAT && expr_concat(key)->field_count > 1) {
 			key->flags |= EXPR_F_INTERVAL;
 			netlink_gen_key(key, &nld);
 			key->flags &= ~EXPR_F_INTERVAL;
@@ -199,7 +199,7 @@ struct nftnl_set_elem *alloc_nftnl_setelem(const struct expr *set,
 				   nftnl_udata_buf_len(udbuf));
 		nftnl_udata_buf_free(udbuf);
 	}
-	if (set_is_datamap(set->set_flags) && data != NULL) {
+	if (set_is_datamap(expr_set(set)->set_flags) && data != NULL) {
 		__netlink_gen_data(data, &nld, !(data->flags & EXPR_F_SINGLETON));
 		switch (data->etype) {
 		case EXPR_VERDICT:
@@ -224,7 +224,7 @@ struct nftnl_set_elem *alloc_nftnl_setelem(const struct expr *set,
 			break;
 		}
 	}
-	if (set_is_objmap(set->set_flags) && data != NULL) {
+	if (set_is_objmap(expr_set(set)->set_flags) && data != NULL) {
 		netlink_gen_data(data, &nld);
 		nftnl_set_elem_set(nlse, NFTNL_SET_ELEM_OBJREF,
 				   nld.value, nld.len);
@@ -359,7 +359,7 @@ static void netlink_gen_concat_key(const struct expr *expr,
 
 	memset(data, 0, sizeof(data));
 
-	list_for_each_entry(i, &expr->expressions, list)
+	list_for_each_entry(i, &expr_concat(expr)->expressions, list)
 		offset += __netlink_gen_concat_key(expr->flags, i, data + offset);
 
 	nft_data_memcpy(nld, data, len);
@@ -423,10 +423,10 @@ static void __netlink_gen_concat_expand(const struct expr *expr,
 
 	memset(data, 0, sizeof(data));
 
-	list_for_each_entry(i, &expr->expressions, list)
+	list_for_each_entry(i, &expr_concat(expr)->expressions, list)
 		offset += __netlink_gen_concat_data(false, i, data + offset);
 
-	list_for_each_entry(i, &expr->expressions, list)
+	list_for_each_entry(i, &expr_concat(expr)->expressions, list)
 		offset += __netlink_gen_concat_data(true, i, data + offset);
 
 	nft_data_memcpy(nld, data, len);
@@ -445,7 +445,7 @@ static void __netlink_gen_concat(const struct expr *expr,
 
 	memset(data, 0, sizeof(data));
 
-	list_for_each_entry(i, &expr->expressions, list)
+	list_for_each_entry(i, &expr_concat(expr)->expressions, list)
 		offset += __netlink_gen_concat_data(expr->flags, i, data + offset);
 
 	nft_data_memcpy(nld, data, len);
@@ -1213,7 +1213,7 @@ void alloc_setelem_cache(const struct expr *set, struct nftnl_set *nls)
 	struct nftnl_set_elem *nlse;
 	const struct expr *expr;
 
-	list_for_each_entry(expr, &set->expressions, list) {
+	list_for_each_entry(expr, &expr_set(set)->expressions, list) {
 		nlse = alloc_nftnl_setelem(set, expr);
 		nftnl_set_elem_add(nls, nlse);
 	}
@@ -1360,7 +1360,7 @@ static struct expr *netlink_parse_concat_elem_key(const struct set *set,
 	int off = dtype->subtypes;
 
 	if (set->key->etype == EXPR_CONCAT)
-		n = list_first_entry(&set->key->expressions, struct expr, list);
+		n = list_first_entry(&expr_concat(set->key)->expressions, struct expr, list);
 
 	concat = concat_expr_alloc(&data->location);
 	while (off > 0) {
@@ -1408,7 +1408,7 @@ static struct expr *netlink_parse_concat_elem(const struct set *set,
 		}
 		assert(list_empty(&expressions));
 	} else {
-		list_splice_tail(&expressions, &concat->expressions);
+		list_splice_tail(&expressions, &expr_concat(concat)->expressions);
 	}
 
 	expr_free(data);
@@ -1679,7 +1679,7 @@ int netlink_list_setelems(struct netlink_ctx *ctx, const struct handle *h,
 	else if (set->flags & NFT_SET_INTERVAL)
 		interval_map_decompose(set->init);
 	else
-		list_expr_sort(&ctx->set->init->expressions);
+		list_expr_sort(&expr_set(ctx->set->init)->expressions);
 
 	nftnl_set_free(nls);
 	ctx->set = NULL;
@@ -1723,7 +1723,7 @@ int netlink_get_setelem(struct netlink_ctx *ctx, const struct handle *h,
 	else if (set->flags & NFT_SET_INTERVAL)
 		err = get_set_decompose(cache_set, set);
 	else
-		list_expr_sort(&ctx->set->init->expressions);
+		list_expr_sort(&expr_set(ctx->set->init)->expressions);
 
 	nftnl_set_free(nls);
 	nftnl_set_free(nls_out);

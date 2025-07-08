@@ -2073,7 +2073,7 @@ chain_block		:	/* empty */	{ $$ = $<chain>-1; }
 			|	chain_block	DEVICES		'='	flowtable_expr	stmt_separator
 			{
 				if ($$->dev_expr) {
-					list_splice_init(&$4->expressions, &$$->dev_expr->expressions);
+					list_splice_init(&expr_list($4)->expressions, &expr_list($$->dev_expr)->expressions);
 					expr_free($4);
 					break;
 				}

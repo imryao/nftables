@@ -402,7 +402,7 @@ static bool netlink_event_range_cache(struct set *cached_set,
 	}
 
 	/* don't cache half-open range elements */
-	elem = list_entry(dummyset->init->expressions.prev, struct expr, list);
+	elem = list_entry(expr_set(dummyset->init)->expressions.prev, struct expr, list);
 	if (!set_elem_is_open_interval(elem) &&
 	    dummyset->desc.field_count <= 1) {
 		cached_set->rg_cache = expr_clone(elem);

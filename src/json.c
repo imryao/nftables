@@ -232,11 +232,11 @@ static json_t *set_print_json(struct output_ctx *octx, const struct set *set)
 	if (set->automerge)
 		json_object_set_new(root, "auto-merge", json_true());
 
-	if (!nft_output_terse(octx) && set->init && set->init->size > 0) {
+	if (!nft_output_terse(octx) && set->init && expr_set(set->init)->size > 0) {
 		json_t *array = json_array();
 		const struct expr *i;
 
-		list_for_each_entry(i, &set->init->expressions, list)
+		list_for_each_entry(i, &expr_set(set->init)->expressions, list)
 			json_array_append_new(array, expr_print_json(i, octx));
 
 		json_object_set_new(root, "elem", array);
@@ -658,7 +658,7 @@ json_t *concat_expr_json(const struct expr *expr, struct output_ctx *octx)
 	json_t *array = json_array();
 	const struct expr *i;
 
-	list_for_each_entry(i, &expr->expressions, list)
+	list_for_each_entry(i, &expr_concat(expr)->expressions, list)
 		json_array_append_new(array, expr_print_json(i, octx));
 
 	return nft_json_pack("{s:o}", "concat", array);
@@ -669,7 +669,7 @@ json_t *set_expr_json(const struct expr *expr, struct output_ctx *octx)
 	json_t *array = json_array();
 	const struct expr *i;
 
-	list_for_each_entry(i, &expr->expressions, list)
+	list_for_each_entry(i, &expr_set(expr)->expressions, list)
 		json_array_append_new(array, expr_print_json(i, octx));
 
 	return nft_json_pack("{s:o}", "set", array);
@@ -738,7 +738,7 @@ json_t *list_expr_json(const struct expr *expr, struct output_ctx *octx)
 	json_t *array = json_array();
 	const struct expr *i;
 
-	list_for_each_entry(i, &expr->expressions, list)
+	list_for_each_entry(i, &expr_list(expr)->expressions, list)
 		json_array_append_new(array, expr_print_json(i, octx));
 
 	//return nft_json_pack("{s:s, s:o}", "type", "list", "val", array);

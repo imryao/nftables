@@ -1286,10 +1286,11 @@ static struct expr *json_parse_binop_expr(struct json_ctx *ctx,
 
 static struct expr *json_check_concat_expr(struct json_ctx *ctx, struct expr *e)
 {
-	if (e->size >= 2)
+	if (expr_concat(e)->size >= 2)
 		return e;
 
-	json_error(ctx, "Concatenation with %d elements is illegal", e->size);
+	json_error(ctx, "Concatenation with %d elements is illegal",
+		   expr_concat(e)->size);
 	expr_free(e);
 	return NULL;
 }

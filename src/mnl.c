@@ -758,12 +758,12 @@ static struct nft_dev *nft_dev_array(const struct expr *dev_expr, int *num_devs)
 
 	switch (dev_expr->etype) {
 	case EXPR_LIST:
-		list_for_each_entry(expr, &dev_expr->expressions, list)
+		list_for_each_entry(expr, &expr_list(dev_expr)->expressions, list)
 			len++;
 
 		dev_array = xmalloc(sizeof(struct nft_dev) * len);
 
-		list_for_each_entry(expr, &dev_expr->expressions, list) {
+		list_for_each_entry(expr, &expr_list(dev_expr)->expressions, list) {
 			nft_dev_add(dev_array, expr, i);
 			i++;
 		}
@@ -1793,7 +1793,7 @@ static int mnl_nft_setelem_batch(const struct nftnl_set *nls, struct cmd *cmd,
 		flags |= NLM_F_CREATE;
 
 	if (init)
-		expr = list_first_entry(&init->expressions, struct expr, list);
+		expr = list_first_entry(&expr_set(init)->expressions, struct expr, list);
 
 next:
 	nlh = nftnl_nlmsg_build_hdr(nftnl_batch_buffer(batch), msg_type,
@@ -1813,16 +1813,16 @@ next:
 				 htonl(nftnl_set_get_u32(nls, NFTNL_SET_ID)));
 	}
 
-	if (!init || list_empty(&init->expressions))
+	if (!init || list_empty(&expr_set(init)->expressions))
 		return 0;
 
 	assert(expr);
 	nest1 = mnl_attr_nest_start(nlh, NFTA_SET_ELEM_LIST_ELEMENTS);
-	list_for_each_entry_from(expr, &init->expressions, list) {
+	list_for_each_entry_from(expr, &expr_set(init)->expressions, list) {
 
 		if (set_is_non_concat_range(set)) {
 			if (set_is_anonymous(set->flags) &&
-			    !list_is_last(&expr->list, &init->expressions))
+			    !list_is_last(&expr->list, &expr_set(init)->expressions))
 				next = list_next_entry(expr, list);
 			else
 				next = NULL;
