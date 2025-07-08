@@ -48,6 +48,7 @@ struct basehook {
 	const char *table;
 	const char *chain;
 	const char *devname;
+	const char *objtype;
 	int family;
 	int chain_family;
 	uint32_t num;
@@ -2454,7 +2455,8 @@ static int dump_nf_hooks(const struct nlmsghdr *nlh, void *_data)
 		}
 
 		type = ntohl(mnl_attr_get_u32(nested[NFNLA_HOOK_INFO_TYPE]));
-		if (type == NFNL_HOOK_TYPE_NFTABLES) {
+		if (type == NFNL_HOOK_TYPE_NFTABLES ||
+		    type == NFNL_HOOK_TYPE_NFT_FLOWTABLE) {
 			struct nlattr *info[NFNLA_CHAIN_MAX + 1] = {};
 			const char *tablename, *chainname;
 
@@ -2472,6 +2474,10 @@ static int dump_nf_hooks(const struct nlmsghdr *nlh, void *_data)
 				hook->chain = xstrdup(chainname);
 			}
 			hook->chain_family = mnl_attr_get_u8(info[NFNLA_CHAIN_FAMILY]);
+			if (type == NFNL_HOOK_TYPE_NFT_FLOWTABLE)
+				hook->objtype = "flowtable";
+			else
+				hook->objtype = "chain";
 		} else if (type == NFNL_HOOK_TYPE_BPF) {
 			struct nlattr *info[NFNLA_HOOK_BPF_MAX + 1] = {};
 
@@ -2595,7 +2601,9 @@ static void print_hooks(struct netlink_ctx *ctx, int family, struct list_head *h
 			fprintf(fp, "\t\t+%010u", prio);
 
 		if (hook->table && hook->chain)
-			fprintf(fp, " chain %s %s %s", family2str(hook->chain_family), hook->table, hook->chain);
+			fprintf(fp, " %s %s %s %s",
+				hook->objtype, family2str(hook->chain_family),
+				hook->table, hook->chain);
 		else if (hook->hookfn && hook->chain)
 			fprintf(fp, " %s %s", hook->hookfn, hook->chain);
 		else if (hook->hookfn) {
