@@ -811,8 +811,8 @@ static void mnl_nft_chain_devs_build(struct nlmsghdr *nlh, struct cmd *cmd)
 		for (i = 0; i < num_devs; i++) {
 			cmd_add_loc(cmd, nlh, dev_array[i].location);
 			mnl_attr_put_strz(nlh, NFTA_DEVICE_NAME, dev_array[i].ifname);
-			mnl_attr_nest_end(nlh, nest_dev);
 		}
+		mnl_attr_nest_end(nlh, nest_dev);
 	}
 	nft_dev_array_free(dev_array);
 }
