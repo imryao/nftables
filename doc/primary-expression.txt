@@ -137,7 +137,8 @@ Day of week|
 Integer (8 bit) or string
 |hour|
 Hour of day|
-String
+String value in the form HH:MM or HH:MM:SS. Values are expected to be less than
+24:00, although for technical reasons, 23:59:60 is accepted, too.
 |====================
 
 .Meta expression specific types

@@ -2441,10 +2441,9 @@ static int expr_evaluate_mapping(struct eval_ctx *ctx, struct expr **expr)
 	return 0;
 }
 
-static int expr_evaluate_symbol_range(struct eval_ctx *ctx, struct expr **exprp)
+static struct expr *symbol_range_expand(struct expr *expr)
 {
-	struct expr *left, *right, *range, *constant_range;
-	struct expr *expr = *exprp;
+	struct expr *left, *right;
 
 	/* expand to symbol and range expressions to consolidate evaluation. */
 	left = symbol_expr_alloc(&expr->location, expr->symtype,
@@ -2453,7 +2452,16 @@ static int expr_evaluate_symbol_range(struct eval_ctx *ctx, struct expr **exprp)
 	right = symbol_expr_alloc(&expr->location, expr->symtype,
 				  (struct scope *)expr->scope,
 				  expr->identifier_range[1]);
-	range = range_expr_alloc(&expr->location, left, right);
+	return range_expr_alloc(&expr->location, left, right);
+}
+
+static int expr_evaluate_symbol_range(struct eval_ctx *ctx, struct expr **exprp)
+{
+	struct expr *left, *right, *range, *constant_range;
+	struct expr *expr = *exprp;
+
+	/* expand to symbol and range expressions to consolidate evaluation. */
+	range = symbol_range_expand(expr);
 
 	if (expr_evaluate(ctx, &range) < 0) {
 		expr_free(range);
@@ -2792,7 +2800,14 @@ static int expr_evaluate_relational(struct eval_ctx *ctx, struct expr **expr)
 
 	pctx = eval_proto_ctx(ctx);
 
-	if (rel->right->etype == EXPR_RANGE && lhs_is_meta_hour(rel->left)) {
+	if (lhs_is_meta_hour(rel->left) &&
+	    (rel->right->etype == EXPR_RANGE ||
+	     rel->right->etype == EXPR_RANGE_SYMBOL)) {
+		if (rel->right->etype == EXPR_RANGE_SYMBOL) {
+			range = symbol_range_expand(rel->right);
+			expr_free(rel->right);
+			rel->right = range;
+		}
 		ret = __expr_evaluate_range(ctx, &rel->right);
 		if (ret)
 			return ret;
