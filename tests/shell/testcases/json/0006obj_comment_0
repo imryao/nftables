@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# NFT_TEST_REQUIRES(NFT_TEST_HAVE_json)
+# NFT_TEST_REQUIRES(NFT_TEST_HAVE_comment)
+
 set -e
 
 $NFT flush ruleset

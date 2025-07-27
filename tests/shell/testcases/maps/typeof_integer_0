@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# NFT_TEST_REQUIRES(NFT_TEST_HAVE_pipapo)
+
 EXPECTED="table inet t {
 	map m1 {
 		typeof udp length . @ih,32,32 : verdict
@@ -13,8 +15,8 @@ EXPECTED="table inet t {
 	}
 
 	chain c {
-		udp length . @ih,32,32 vmap @m1
-		udp length . @ih,32,32 vmap @m2
+		udp length . @nh,32,32 vmap @m1
+		udp length . @nh,32,32 vmap @m2
 		udp length . @th,160,128 vmap { 47-63 . 0xe373135363130333131303735353203 : accept }
 	}
 }"

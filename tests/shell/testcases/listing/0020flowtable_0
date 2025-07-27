@@ -1,6 +1,10 @@
 #!/bin/bash
 
+# NFT_TEST_REQUIRES(NFT_TEST_HAVE_flowtable_no_devices)
+
 # list only the flowtable asked for with table
+
+set -e
 
 FLOWTABLES="flowtable f {
 	hook ingress priority filter
@@ -41,13 +45,19 @@ EXPECTED3="table ip filter {
 	}
 }"
 
-ip link add d0 type dummy || {
-	echo "Skipping, no dummy interface available"
-	exit 0
+iface_cleanup() {
+	ip link del d0 &>/dev/null || :
 }
-trap "ip link del d0" EXIT
+ft_cleanup() {
+	if [ "$NFT_TEST_HAVE_ifname_based_hooks" = y ]; then
+		$NFT 'delete flowtable ip filter f2 { devices = { d0 }; }'
+		$NFT 'delete flowtable inet filter f2 { devices = { d0 }; }'
+	fi
+}
+trap 'iface_cleanup; ft_cleanup' EXIT
+iface_cleanup
 
-set -e
+ip link add d0 type dummy
 
 $NFT -f - <<< "$RULESET"
 
