@@ -4496,10 +4496,8 @@ prefix_rhs_expr		:	basic_rhs_expr	SLASH	NUM
 
 range_rhs_expr		:	basic_rhs_expr	DASH	basic_rhs_expr
 			{
-				if ($1->etype == EXPR_SYMBOL &&
-				    $1->symtype == SYMBOL_VALUE &&
-				    $3->etype == EXPR_SYMBOL &&
-				    $3->symtype == SYMBOL_VALUE) {
+				if (is_symbol_value_expr($1) &&
+				    is_symbol_value_expr($3)) {
 					$$ = symbol_range_expr_alloc(&@$, $1->symtype, $1->scope, $1->identifier, $3->identifier);
 					expr_free($1);
 					expr_free($3);

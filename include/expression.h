@@ -470,6 +470,8 @@ extern struct expr *verdict_expr_alloc(const struct location *loc,
 extern struct expr *symbol_expr_alloc(const struct location *loc,
 				      enum symbol_types type, struct scope *scope,
 				      const char *identifier);
+#define is_symbol_value_expr(expr) \
+	((expr)->etype == EXPR_SYMBOL && (expr)->symtype == SYMBOL_VALUE)
 
 const char *expr_name(const struct expr *e);
 
