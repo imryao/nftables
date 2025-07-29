@@ -1360,7 +1360,7 @@ static struct expr *json_parse_prefix_expr(struct json_ctx *ctx,
 static struct expr *json_parse_range_expr(struct json_ctx *ctx,
 					  const char *type, json_t *root)
 {
-	struct expr *expr_low, *expr_high;
+	struct expr *expr_low, *expr_high, *tmp;
 	json_t *low, *high;
 
 	if (json_unpack_err(ctx, root, "[o, o!]", &low, &high))
@@ -1376,6 +1376,16 @@ static struct expr *json_parse_range_expr(struct json_ctx *ctx,
 		json_error(ctx, "Invalid high value in range expression.");
 		expr_free(expr_low);
 		return NULL;
+	}
+	if (is_symbol_value_expr(expr_low) && is_symbol_value_expr(expr_high)) {
+		tmp = symbol_range_expr_alloc(int_loc,
+					      SYMBOL_VALUE,
+					      expr_low->scope,
+					      expr_low->identifier,
+					      expr_high->identifier);
+		expr_free(expr_low);
+		expr_free(expr_high);
+		return tmp;
 	}
 	return range_expr_alloc(int_loc, expr_low, expr_high);
 }
