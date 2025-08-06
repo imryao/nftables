@@ -99,6 +99,7 @@ noinst_HEADERS = \
 	include/socket.h \
 	include/statement.h \
 	include/tcpopt.h \
+	include/trace.h \
 	include/utils.h \
 	include/xfrm.h \
 	include/xt.h \
